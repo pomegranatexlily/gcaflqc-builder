@@ -275,6 +275,11 @@ let S = loadState();
 let saveTimer = null;
 function persist(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{localStorage.setItem(LS_KEY, JSON.stringify(S));}catch(e){} }, 400); }
 function persistNow(){ clearTimeout(saveTimer); try{localStorage.setItem(LS_KEY, JSON.stringify(S));}catch(e){} }
+// iOS may suspend a PWA before a debounced save fires; flush drafts on exit.
+window.addEventListener('pagehide', persistNow);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') persistNow();
+});
 function newId(){ return 'brief_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function blankBrief(){ return { goal:'', context:'', audience:'', format:'', limits:'' }; }
 function activeRec(){ return S.briefs[S.activeBriefId] || null; }
