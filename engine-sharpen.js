@@ -262,6 +262,9 @@
 
   function normalizeFormatLine(line) {
     var t = line.trim();
+    // Preserve user-specified requirements; normalize only clear MLA/page syntax.
+    var mla = t.match(/^(Return:\s*)MLA\s+FORMAT\s+(\d+(?:-\d+)?\s+pages?)\s*$/i);
+    if (mla) return mla[1] + 'MLA format, ' + mla[2].toLowerCase();
     if (/^(Format|Sections):/i.test(t)) return t; // idempotent
     var m = t.match(/^output\s+as\s+(.+?)\s+with\s+sections\s+for\s+(.+)$/i);
     if (m) {
@@ -296,13 +299,32 @@
   /* Public transform                                                    */
   /* ------------------------------------------------------------------ */
 
+  // Narrow goal repairs: clean malformed request scaffolding without
+  // inventing a topic, thesis, or academic requirements.
+  function normalizeGoalLine(line) {
+    var m = line.match(/^(Success:\s*)(.*)$/i);
+    var label = m ? m[1] : '';
+    var text = legacyTighten(m ? m[2] : line);
+    // "I want to do an assignment" previously became "Produce to do...".
+    text = text.replace(/^Produce to do (?=(?:an?|the)\s+assignment\b)/i, 'Complete ');
+    return label + text;
+  }
+
+  function normalizeContextLine(line) {
+    var t = legacyTighten(line);
+    // Historical event capitalization; never insert a source or evidence.
+    return t.replace(/\bcivil war\b/gi, 'Civil War');
+  }
+
   function transformLine(line, dimension) {
     var t = line.trim();
     if (!t) return '';
     if (dimension === 'limits') return normalizeLimitsLine(t);
     if (dimension === 'format') return normalizeFormatLine(t);
     if (dimension === 'audience') return normalizeAudienceLine(t);
-    return legacyTighten(t); // goal, context, or unknown dimension
+    if (dimension === 'goal') return normalizeGoalLine(t);
+    if (dimension === 'context') return normalizeContextLine(t);
+    return legacyTighten(t); // unknown dimension
   }
 
   // Pure: { text, edits }. edits counts lines whose masked form changed;

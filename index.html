@@ -217,9 +217,10 @@ footer.app .gold{color:var(--gold)}
 
 <script src="engine-sharpen.js"></script>
 <script src="engine-handoff.js"></script>
+<script src="engine-quality.js"></script>
 <script>
 'use strict';
-/* SharpenEngine and HandoffEngine load above (same files run under Node tests). */
+/* SharpenEngine, HandoffEngine, and BriefQualityEngine load above. */
 /* ================= utils ================= */
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -313,7 +314,7 @@ function auditBrief(brief){
       out.push({ rule:r.id, dimension: dyn?dyn.dimension:r.dim, message: dyn?dyn.message:r.msg, severity:r.severity });
     }
   }
-  return out;
+  return out.concat(BriefQualityEngine.review(brief));
 }
 
 /* ================= domain: sharpening (engine) =================
@@ -329,10 +330,8 @@ function findVague(brief){
 }
 
 /* ================= domain: renderers ================= */
-const segJoin = parts => parts.filter(p=>p && p[1] && String(p[1]).trim()).map(p=>`[${p[0]}] ${String(p[1]).trim()}`).join(' ');
 function renderPrompt(b){
-  return segJoin([['GOAL',b.goal],['CONTEXT',b.context],['AUDIENCE',b.audience],['FORMAT',b.format],['LIMITS',b.limits]])
-    + ' [QC] Before outputting, verify evidence support, flag uncertainty, and confirm full compliance.';
+  return BriefQualityEngine.renderCompact(b);
 }
 function renderFullBrief(b){
   const sec = (t,v)=>`[${t}]\n${v.trim()}\n`;

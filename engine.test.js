@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const sharpen = require('./engine-sharpen.js');
 const handoff = require('./engine-handoff.js');
+const quality = require('./engine-quality.js');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -185,6 +186,64 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   ok(!off.prefilled && off.url === px.url, 'H6 prefill opt-in default off');
   const cg = D.filter(function (d) { return d.id === 'chatgpt'; })[0];
   ok(handoff.buildUrl(cg, 'hello', true).prefilled === false, 'H7 no prefill where unsupported');
+})();
+
+
+/* ---------------- Real-user assignment: Lincoln brief quality ---------------- */
+(function () {
+  const rawGoal = 'Success: Produce to do an assignment about Abe Lincoln';
+  eq(t(rawGoal, 'goal'), 'Success: Complete an assignment about Abe Lincoln',
+     'LIN1 malformed goal repaired');
+  eq(t('I want to do an assignment about Abe Lincoln', 'goal'),
+     'Complete an assignment about Abe Lincoln', 'LIN2 natural goal repaired');
+  eq(t('Sources: Civil war evidence', 'context'),
+     'Sources: Civil War evidence', 'LIN3 proper noun capitalization');
+  eq(t('Return: MLA FORMAT 5 pages', 'format'),
+     'Return: MLA format, 5 pages', 'LIN4 exact formatting normalization');
+
+  ['goal', 'context', 'format'].forEach((dim, i) => {
+    const inputs = [rawGoal, 'Sources: Civil war evidence', 'Return: MLA FORMAT 5 pages'];
+    const once = t(inputs[i], dim);
+    eq(t(once, dim), once, 'LIN5 idempotent ' + dim);
+  });
+
+  const original = {
+    goal: 'Success: Complete an assignment about Abe Lincoln',
+    context: 'Sources: Civil War evidence',
+    audience: 'My teacher',
+    format: 'Return: MLA format, 5 pages',
+    limits: 'Never: get off topic of the thesis\nKeep: In touch with my thesis'
+  };
+  const before = JSON.stringify(original);
+  const findings = quality.review(original);
+  ok(findings.some(f => f.rule === 'thesis-unspecified' && f.severity === 'blocking'),
+    'LIN6 unspecified thesis is blocking');
+  ok(findings.some(f => f.rule === 'sources-unspecified'),
+    'LIN7 generic evidence prompts source nudge');
+  ok(findings.some(f => f.rule === 'limits-redundant'),
+    'LIN8 overlapping thesis boundaries caught');
+  eq(JSON.stringify(original), before, 'LIN9 QC never modifies input');
+  const rendered = quality.renderCompact(original);
+  ok(rendered.indexOf('[GOAL]\n') === 0 && rendered.includes('\n\n[CONTEXT]\n') &&
+    rendered.includes('\n\n[QC]\n'), 'LIN10 compact output separated by dimension');
+  ok(rendered.includes('Civil War evidence') && !rendered.includes('Library of Congress'),
+    'LIN11 renderer does not invent sources');
+  const resolved = Object.assign({}, original, {
+    context: 'Sources: Library of Congress records\nThesis: Lincoln changed policy during the Civil War.'
+  });
+  ok(!quality.review(resolved).some(f => f.rule === 'thesis-unspecified' || f.rule === 'sources-unspecified'),
+    'LIN12 actual thesis and named source clear both warnings');
+  eq(quality.review({goal:'Success: Summarize a memo',context:'Sources: Customer interview notes',
+    audience:'Team',format:'Return: one-page memo',limits:'Never: invent facts'}).length,
+    0, 'LIN13 unrelated complete brief no false warnings');
+
+  const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  ok(html.includes('src="engine-quality.js"') &&
+    html.includes('BriefQualityEngine.review(brief)') &&
+    html.includes('BriefQualityEngine.renderCompact(b)'),
+    'LIN14 browser loads, audits and renders with quality module');
+  ok(!/\(\?<[=!]/.test(fs.readFileSync(path.join(__dirname,'engine-quality.js'),'utf8')),
+    'LIN15 module has no Safari-incompatible lookbehind');
 })();
 
 /* ---------------- Report ---------------- */

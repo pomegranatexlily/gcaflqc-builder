@@ -16,8 +16,9 @@ Dr. Nachamasha Yahsharala. All Rights Reserved.
 
 | File | Purpose |
 |---|---|
-| `index.html` | The real mobile-first application (no framework, no build step). Loads the two engines below and provides the brief editor, QC, Seal, renderers, handoff, sharing, and local persistence. |
+| `index.html` | The real mobile-first application (no framework, no build step). Loads the browser engines and provides the brief editor, QC, Seal, renderers, handoff, sharing, and local persistence. |
 | `engine-sharpen.js` | Deterministic Sharpen + audit engine. No AI, no network. Shared between the browser and the Node test suite via a UMD wrapper. |
+| `engine-quality.js` | Deterministic cross-field QC for missing thesis statements, vague source boundaries, redundant limitations, and readable compact prompt output. |
 | `engine-handoff.js` | Handoff transport adapters (Copy, ChatGPT, Claude, Perplexity, Grok). Copy-first; prefill is opt-in and length-guarded. |
 | `engine.test.js` | Executable Node regression suite. Run it with `node engine.test.js`. |
 | `README.md` | This file. |
@@ -34,8 +35,9 @@ Assignment → Canonical Brief → Audit → Optional Sharpen → Human Review
     → Seal → Render → Handoff
 ```
 
-- **QC is advisory.** It surfaces the single most important structural
-  weakness. No scores, no percentages, no XP.
+- **QC is reviewable.** Structural and missing-thesis findings can block
+  sealing; source specificity and repetition findings are advisory. The UI
+  foregrounds the highest-priority issue. No scores, percentages, or XP.
 - **Sharpen is deterministic and reviewable.** It offers mechanical
   tightening (never meaning changes); the human previews and applies it.
   One-level Undo is supported.
@@ -70,6 +72,15 @@ Protected content (quotes, URLs, inline code, `[[slots]]`) is masked before
 transformation with collision-free sentinels and restored byte-identical —
 including literal Unicode private-use characters in user input.
 
+## Real-world brief corrections
+
+- `Success: Produce to do an assignment about Abe Lincoln` → `Success: Complete an assignment about Abe Lincoln` after human-approved Sharpen.
+- `Sources: Civil war evidence` → `Sources: Civil War evidence` (capitalization only; no source fabrication).
+- `Return: MLA FORMAT 5 pages` → `Return: MLA format, 5 pages` (formatting only).
+- Referring to **my thesis** without providing `Thesis: ...` triggers a blocking QC prompt rather than inventing one.
+- Generic `Sources: Civil War evidence` produces an advisory asking for actual research boundaries or source documents.
+- Compact handoff puts each G-C-A-F-L field and QC in separate paragraphs, preserving the user's words.
+
 ## Testing
 
 ```sh
@@ -79,7 +90,7 @@ node engine.test.js
 The suite covers every behavior above plus idempotence (second pass is a
 no-op with zero edits), no double-tagging, undo semantics, vague-language
 audit with idiom exceptions, determinism, edit-count sanity, and an iOS
-Safari 15+ compatibility scan (no regex lookbehind in either engine).
+Safari 15+ compatibility scan (no regex lookbehind in the three engines).
 
 ## Browser support
 
@@ -90,5 +101,4 @@ same task as the copy so mobile browsers keep transient user activation.
 
 ## Deployment
 
-Copy the five files to any static host, or enable GitHub Pages on the
-repository. No build, no environment variables, no server.
+Serve the repository at its root on any static host, or use GitHub Pages. No build, no environment variables, no server.
