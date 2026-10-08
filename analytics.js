@@ -54,12 +54,17 @@
     if (!save(d)) return false;
     var endpoint = typeof root.GCAFLQC_ANALYTICS_ENDPOINT === 'string' ? root.GCAFLQC_ANALYTICS_ENDPOINT.trim() : '';
     if (/^https:\/\//i.test(endpoint)) {
+      // Cloudflare Worker routes events to POST /ping. Allow the base URL or /ping.
+      var pingUrl = endpoint.replace(/\/+$/, '');
+      if (!/\/ping$/i.test(pingUrl)) pingUrl += '/ping';
       var payload = JSON.stringify({v:1, event:'seal', deviceId:d.deviceId, at:now, durationSeconds:duration});
       try {
+        var queued = false;
         if (root.navigator && typeof root.navigator.sendBeacon === 'function') {
-          root.navigator.sendBeacon(endpoint, new Blob([payload], {type:'application/json'}));
-        } else if (typeof root.fetch === 'function') {
-          root.fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:payload, keepalive:true}).catch(function () {});
+          queued = root.navigator.sendBeacon(pingUrl, new Blob([payload], {type:'application/json'}));
+        }
+        if (!queued && typeof root.fetch === 'function') {
+          root.fetch(pingUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body:payload, keepalive:true}).catch(function () {});
         }
       } catch (e) {} // Measurement must never interrupt sealing.
     }
