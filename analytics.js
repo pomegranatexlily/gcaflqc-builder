@@ -40,6 +40,8 @@
     if (!id) return false;
     return save({version:1, consent:true, deviceId:id, events:[], enabledAt:new Date().toISOString()});
   }
+  var delivery = {state:'idle', status:null};
+  function deliveryStatus() { return {state:delivery.state, status:delivery.status}; }
   function recordSeal(elapsedMs) {
     var d = read();
     if (!d || !d.consent) return false;
@@ -58,15 +60,30 @@
       var pingUrl = endpoint.replace(/\/+$/, '');
       if (!/\/ping$/i.test(pingUrl)) pingUrl += '/ping';
       var payload = JSON.stringify({v:1, event:'seal', deviceId:d.deviceId, at:now, durationSeconds:duration});
-      try {
-        var queued = false;
-        if (root.navigator && typeof root.navigator.sendBeacon === 'function') {
-          queued = root.navigator.sendBeacon(pingUrl, new Blob([payload], {type:'text/plain;charset=UTF-8'}));
-        }
-        if (!queued && typeof root.fetch === 'function') {
-          root.fetch(pingUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:payload, keepalive:true}).catch(function () {});
-        }
-      } catch (e) {} // Measurement must never interrupt sealing.
+      // Use fetch instead of sendBeacon: queued beacons cannot confirm HTTP success.
+      // text/plain avoids unnecessary cross-origin preflight for this JSON payload.
+      if (typeof root.fetch === 'function') {
+        delivery = {state:'sending', status:null};
+        root.fetch(pingUrl, {
+          method:'POST',
+          mode:'cors',
+          headers:{'Content-Type':'text/plain;charset=UTF-8'},
+          body:payload,
+          keepalive:true,
+          credentials:'omit'
+        }).then(function (response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        }).then(function (result) {
+          if (!result || result.ok !== true) throw new Error('Unexpected response');
+          delivery = {state:'delivered', status:200};
+        }).catch(function (err) {
+          delivery = {state:'failed', status:String(err && err.message || err)};
+          if (root.console && root.console.warn) root.console.warn('G-CAFL-QC analytics delivery failed:', delivery.status);
+        });
+      } else {
+        delivery = {state:'failed', status:'fetch unavailable'};
+      }
     }
     return true;
   }
@@ -83,5 +100,5 @@
       firstSealSeconds:events.length ? events[0].durationSeconds : null
     };
   }
-  return {isEnabled:isEnabled, setEnabled:setEnabled, recordSeal:recordSeal, snapshot:snapshot};
+  return {isEnabled:isEnabled, setEnabled:setEnabled, recordSeal:recordSeal, snapshot:snapshot, deliveryStatus:deliveryStatus};
 }));
