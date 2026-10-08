@@ -1,0 +1,11 @@
+name = "gcaflqc-analytics"
+main = "worker.js"
+compatibility_date = "2026-10-07"
+
+# Existing production namespace; replace this placeholder with its actual ID
+# before deploying from this directory. Never create a second namespace.
+# [[kv_namespaces]]
+# binding = "SEALS"
+# id = "REPLACE_WITH_EXISTING_NAMESPACE_ID"
+
+# ADMIN_KEY must remain a Cloudflare secret; never commit its value.
