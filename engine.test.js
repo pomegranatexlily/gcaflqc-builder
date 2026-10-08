@@ -246,6 +246,56 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
     'LIN15 module has no Safari-incompatible lookbehind');
 })();
 
+/* ---------------- QC: cap duplication, number consistency, money completeness ---------------- */
+(function () {
+  const q = (b) => quality.review(b).map(f => f.rule);
+
+  // limits-cap-duplicated: same $ cap in Keep and Never
+  ok(q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: plan', limits:'Keep: keep the total budget under $1500\nNever: never exceed the budget cap of $1,500'})
+    .includes('limits-cap-duplicated'), 'QCAP1 duplicated cap flagged');
+  ok(!q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: plan', limits:'Keep: original voice\nNever: fabricate sources'})
+    .includes('limits-cap-duplicated'), 'QCAP2 distinct limits not flagged');
+
+  // numbers-inconsistent: itemized total above the stated cap
+  ok(q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: itemized plan totaling $1,700', limits:'Never: exceed $1500'})
+    .includes('numbers-inconsistent'), 'QNUM1 over-cap total flagged');
+  // consistent: cap restatement in goal excluded, total under cap
+  ok(!q({goal:'Success: Plan a fair with a $1,500 budget', context:'Sources: school gym', audience:'Principal',
+    format:'Return: itemized plan totaling $1,400', limits:'Keep: keep total under $1500'})
+    .includes('numbers-inconsistent'), 'QNUM2 consistent budget not flagged');
+  // no cap detected: no finding, no crash
+  ok(!q({goal:'Success: Write an essay', context:'Sources: class notes', audience:'Teacher',
+    format:'Return: 5 pages', limits:'Keep: original voice\nNever: fabricate'})
+    .includes('numbers-inconsistent'), 'QNUM3 no cap means no finding');
+  // "up to 100 students" must never be read as a $ cap
+  ok(!q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Up to 100 students',
+    format:'Return: plan costing $1,200', limits:'Keep: original voice\nNever: fabricate'})
+    .includes('numbers-inconsistent'), 'QNUM4 non-money up-to not treated as cap');
+
+  // limits-money-no-figure: money talk without a figure is not a constraint
+  ok(q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: plan', limits:'Keep: stay on budget\nNever: overspend'})
+    .includes('limits-money-no-figure'), 'QMONEY1 money without figure flagged');
+  ok(!q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: plan', limits:'Keep: original voice\nNever: fabricate'})
+    .includes('limits-money-no-figure'), 'QMONEY2 no money talk not flagged');
+  ok(!q({goal:'Success: Plan a fair', context:'Sources: school gym', audience:'Principal',
+    format:'Return: plan', limits:'Keep: budget under $1500\nNever: exceed it'})
+    .includes('limits-money-no-figure'), 'QMONEY3 money with figure not flagged');
+
+  // advisory severity, never blocking; input never mutated
+  const b = {goal:'Success: Plan', context:'Sources: gym', audience:'P',
+    format:'Return: plan totaling $1,700', limits:'Never: exceed $1500'};
+  const before = JSON.stringify(b);
+  const f = quality.review(b).filter(x => x.rule === 'numbers-inconsistent');
+  eq(f.length, 1, 'QSEV1 exactly one inconsistency finding');
+  eq(f[0].severity, 'advisory', 'QSEV2 inconsistency is advisory, not blocking');
+  eq(JSON.stringify(b), before, 'QSEV3 QC never modifies input');
+})();
+
 /* ---------------- Report ---------------- */
 if (failures.length) {
   console.log('\nFAILURES (' + failures.length + '):\n');

@@ -10,6 +10,15 @@
 
   function val(brief, key) { return String(brief && brief[key] || ''); }
 
+  function moneyValues(text) {
+    var out = [], re = /\$\s*([\d,]+(?:\.\d{1,2})?)/g, m;
+    while ((m = re.exec(text))) out.push(parseFloat(m[1].replace(/,/g, '')));
+    return out;
+  }
+  function fmtMoney(n) {
+    return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
   function review(brief) {
     var goal = val(brief, 'goal');
     var context = val(brief, 'context');
@@ -54,6 +63,49 @@
       findings.push({
         rule: 'limits-redundant', dimension: 'L', severity: 'advisory',
         message: 'Limits — these two thesis restrictions overlap. Consider one precise instruction after you supply the thesis.'
+      });
+    }
+
+    // Same $ cap stated twice (e.g. Keep: under $1500 / Never: never exceed
+    // $1,500). Keep should hold the positive requirement, Never the
+    // forbidden action — not the same rule twice.
+    var limitAmounts = moneyValues(limits);
+    var seenAmt = {}, dupAmt = null;
+    for (var ai = 0; ai < limitAmounts.length; ai++) {
+      var akey = String(limitAmounts[ai]);
+      if (seenAmt[akey]) { dupAmt = limitAmounts[ai]; break; }
+      seenAmt[akey] = true;
+    }
+    if (dupAmt !== null) {
+      findings.push({
+        rule: 'limits-cap-duplicated', dimension: 'L', severity: 'advisory',
+        message: 'Limits — Keep and Never repeat the same ' + fmtMoney(dupAmt) + ' cap. Make Keep the positive requirement and Never the forbidden action.'
+      });
+    }
+
+    // Internal consistency: a ceiling stated in Limits ("under $1500",
+    // "cap of $1,500") versus $ amounts named anywhere else. Restatements
+    // of the cap itself are excluded. Advisory only — the engine checks the
+    // brief's own math, never external prices.
+    var capMatch = limits.match(/\b(under|below|within|less\s+than|exceed(?:ing)?|no\s+more\s+than|capped?(?:\s+(?:at|of))?|maximum(?:\s+of)?|up\s+to)\b[^$\n]{0,30}\$\s*([\d,]+(?:\.\d{1,2})?)/i);
+    if (capMatch) {
+      var cap = parseFloat(capMatch[2].replace(/,/g, ''));
+      var others = moneyValues(goal + '\n' + context + '\n' + audience + '\n' + format)
+        .filter(function (n) { return n !== cap; });
+      var othersTotal = others.reduce(function (a, b) { return a + b; }, 0);
+      if (others.length && othersTotal > cap) {
+        findings.push({
+          rule: 'numbers-inconsistent', dimension: 'L', severity: 'advisory',
+          message: 'Numbers — ' + fmtMoney(othersTotal) + ' named outside Limits exceeds the ' + fmtMoney(cap) + ' cap. Verify the math before sealing.'
+        });
+      }
+    }
+
+    // Completeness: money talk with no figure is not a constraint.
+    if (/\b(budget|cost|spend(?:ing)?|price|fee|payment)\b/i.test(limits) && !/\d/.test(limits)) {
+      findings.push({
+        rule: 'limits-money-no-figure', dimension: 'L', severity: 'advisory',
+        message: 'Limits — money is mentioned but no figure is stated. Add the cap (for example, "Never: exceed $1,500").'
       });
     }
 
