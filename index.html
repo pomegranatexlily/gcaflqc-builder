@@ -133,6 +133,7 @@ footer.app .gold{color:var(--gold)}
       <div class="field-prefix">Goal · Success</div>
       <textarea id="inline-goal" aria-label="Goal: what are you producing?" placeholder="Describe the outcome in your own words. Your answer becomes Success: in the brief."></textarea>
       <div class="goal-hint">Type once; your goal saves automatically and follows the brief.</div>
+      <button class="linkbtn" id="goal-sharpen" type="button" style="padding:7px 0">Sharpen goal</button>
     </div>
     <div><span class="chip draft" id="status-chip">Draft</span></div>
     <div id="brief-rows"></div>
@@ -502,6 +503,7 @@ $('inline-goal').addEventListener('input',()=>{
   const typed=$('inline-goal').value;
   editDimension(rec,'goal',typed.trim()?'Success: '+typed:'');
 });
+$('goal-sharpen').addEventListener('click',()=>openEditor('goal'));
 function editDimension(rec, key, value){
   rec.brief[key] = value;
   if (rec.sealedAt){ rec.sealedAt=null; toast('Seal cleared — brief is now Draft.'); }
