@@ -533,7 +533,15 @@ function sealBrief(){
   if (blocking){ toast('Resolve the QC nudge first.'); return; }
   rec.sealedAt = new Date().toISOString(); touch(rec); persistNow();
   GCAFLQCMetrics.recordSeal(Date.now()-Date.parse(rec.createdAt));
-  renderBrief(); toast('Brief sealed.');
+  renderBrief(); toast('Brief sealed locally.');
+  if (GCAFLQCMetrics.isEnabled()) {
+    setTimeout(()=>{
+      const d=GCAFLQCMetrics.deliveryStatus();
+      if(d.state==='delivered') toast('Brief sealed · analytics delivered.');
+      else if(d.state==='failed') toast('Brief sealed · analytics failed: '+d.status);
+      else if(d.state==='sending') toast('Brief sealed · analytics still sending.');
+    },1800);
+  }
 }
 
 /* ================= UI: row editor sheet ================= */
