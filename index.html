@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>G-CAFL-QC Builder</title>
+<meta name="description" content="Sharpen one canonical production brief. Goal, Context, Audience, Format, Limits, Quality Check. The human seals.">
+<style>
+:root{
+  --bg:#100e0c; --surface:#1a1714; --surface2:#221e1a; --line:#332c26;
+  --text:#f0e9dc; --muted:#a89c8a; --accent:#d4243c; --gold:#e8b04b;
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;line-height:1.55;min-height:100dvh}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-inset-bottom))}
+/* header */
+header.app{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 0 12px;border-bottom:1px solid var(--line);margin-bottom:16px;position:sticky;top:0;background:var(--bg);z-index:20}
+.brand{font-size:13px;letter-spacing:2.5px;font-weight:800}
+.brand .qc{color:var(--accent)}
+.hspacer{flex:1}
+.pill{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.pill.manual{color:var(--gold);border-color:var(--gold)}
+.iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer}
+/* blank state */
+#view-blank{text-align:center;padding:8vh 8px 0}
+.brand-big{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+#view-blank h1{font-size:34px;margin-bottom:8px}
+#view-blank h1 .qc{color:var(--accent)}
+.principle{font-style:italic;color:var(--muted);font-size:14px;margin-bottom:34px}
+.biglabel{display:block;font-size:19px;font-weight:700;margin-bottom:12px}
+#blank-input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);color:var(--text);padding:16px;font-size:17px;font-family:inherit;min-height:110px;resize:vertical;margin-bottom:16px}
+#blank-input:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+/* buttons */
+.btn{display:block;width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;margin-top:12px}
+.btn.plain{background:var(--surface2);border-color:var(--line);color:var(--text)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.big{font-size:17px;padding:17px;margin-top:20px}
+/* brief view */
+.chip{display:inline-block;font-size:11px;letter-spacing:2px;font-weight:800;text-transform:uppercase;border-radius:6px;padding:5px 12px;margin-bottom:14px}
+.chip.draft{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.chip.sealed{background:rgba(232,176,75,.12);color:var(--gold);border:1px solid var(--gold)}
+#brief-rows{display:flex;flex-direction:column;gap:10px}
+.dimrow{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px;cursor:pointer;text-align:left;width:100%;color:var(--text);font-family:inherit}
+.dimrow:active{background:var(--surface2)}
+.badge{flex:0 0 34px;height:34px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.dimbody{flex:1;min-width:0}
+.dimname{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:3px}
+.dimtext{font-size:15px;white-space:pre-wrap;word-break:break-word}
+.dimtext.empty{color:var(--muted);font-style:italic;font-size:14px}
+.seal-line{margin-top:16px;text-align:center;color:var(--gold);font-size:13px;letter-spacing:1px}
+.nudge{margin-top:14px;padding:13px 15px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;font-size:14.5px;color:var(--text)}
+.nudge.ready{border-left-color:var(--gold);color:var(--gold);font-weight:600}
+.advisory{margin-top:8px;font-size:12.5px;color:var(--muted);padding:0 4px}
+/* sheets */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:720px;max-height:92dvh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet-head>div:first-child{font-size:16px;font-weight:800}
+.sheet-head .btn{width:auto;margin:0;padding:9px 18px;font-size:14px}
+.headbtns{display:flex;gap:8px}
+.sheet label{display:block;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:16px 0 8px}
+#editor-text{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:14px;font-size:16px;font-family:inherit;min-height:180px;resize:vertical}
+#editor-text:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chipbtn{border:1px dashed var(--gold);background:transparent;color:var(--gold);border-radius:20px;padding:8px 16px;font-size:13.5px;font-weight:600;cursor:pointer}
+/* handoff */
+.seg{display:flex;gap:6px;margin-bottom:6px}
+.seg button{flex:1;padding:11px 4px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+.seg button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.dest-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.dest-grid .btn{margin-top:0;font-size:15px;padding:13px}
+.quiet-row{display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:center;margin-top:18px}
+.hintline{font-size:12.5px;color:var(--muted);margin:-2px 0 10px}
+.autofill{font-size:10px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:1px 6px;margin-left:6px;text-transform:uppercase;white-space:nowrap}
+.linkbtn{background:none;border:none;color:var(--muted);font-size:13.5px;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px}
+.linkbtn.danger{color:var(--accent)}
+/* drawer */
+#drawer{position:fixed;top:0;left:0;bottom:0;width:min(340px,88vw);background:var(--surface);border-right:1px solid var(--line);z-index:50;padding:calc(14px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));overflow:auto}
+.drawer-sec{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:20px 0 8px}
+.brow{display:flex;align-items:center;gap:10px;width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;color:var(--text);font-family:inherit;text-align:left}
+.brow .dot{flex:0 0 10px;height:10px;border-radius:50%;background:var(--muted)}
+.brow .dot.visual{background:var(--accent)}
+.brow .dot.written{background:var(--gold)}
+.brow .t{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .meta{font-size:11px;color:var(--muted);white-space:nowrap}
+.brow .sealchip{font-size:10px;letter-spacing:1px;font-weight:800;color:var(--gold)}
+.drawer-foot{margin-top:26px;font-size:11px;color:var(--muted);line-height:1.7;text-align:center}
+/* starter fill */
+#starter-fields label{margin-top:12px}
+#starter-fields input{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:11px 12px;font-size:15px;font-family:inherit;margin-top:5px}
+/* toast + footer */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+footer.app{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);text-align:center;line-height:1.8}
+footer.app .gold{color:var(--gold)}
+.empty{text-align:center;color:var(--muted);padding:26px 8px;font-size:14px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app" id="app-header" hidden>
+    <div class="brand">G-CAFL-<span class="qc">QC</span></div>
+    <div class="hspacer"></div>
+    <button class="pill" id="mode-pill" aria-label="Toggle brief mode"></button>
+    <button class="iconbtn" id="drawer-btn" aria-label="Open briefs">☰</button>
+  </header>
+
+  <!-- BLANK STATE -->
+  <section id="view-blank">
+    <div class="brand-big">Pomegranate × Lily · Freedom Arkives</div>
+    <h1>G-CAFL-<span class="qc">QC</span> Builder</h1>
+    <p class="principle">"AI is not the education — execution is."</p>
+    <label class="biglabel" for="blank-input">What are you producing?</label>
+    <textarea id="blank-input" placeholder="Type or paste your assignment in one sentence…"></textarea>
+    <button class="btn" id="blank-start">Start brief</button>
+  </section>
+
+  <!-- BRIEF VIEW -->
+  <section id="view-brief" hidden>
+    <div><span class="chip draft" id="status-chip">Draft</span></div>
+    <div id="brief-rows"></div>
+    <div class="seal-line" id="seal-line" hidden></div>
+    <div class="nudge" id="qc-nudge"></div>
+    <div class="advisory" id="qc-advisory" hidden></div>
+    <button class="btn big" id="primary-action"></button>
+  </section>
+
+  <footer class="app">
+    G-CAFL-QC Framework™ © 2026 Christopher Turner,<br>
+    writing and publishing as Dr. Nachamasha Yahsharala. All Rights Reserved.<br>
+    <span class="gold">POMEGRANATE × LILY · Freedom Arkives</span>
+  </footer>
+</div>
+
+<!-- ROW EDITOR SHEET -->
+<div class="sheet-backdrop" id="sheet-editor" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><div id="editor-title">Goal</div><div class="headbtns"><button class="btn ghost" id="editor-sharpen">Sharpen</button><button class="btn" id="editor-done">Done</button></div></div>
+    <textarea id="editor-text" aria-label="Edit dimension"></textarea>
+    <div class="chips" id="editor-chips"></div>
+    <div id="sharpen-preview" hidden style="margin-top:14px;border:1px solid var(--gold);border-radius:10px;padding:12px;background:var(--surface2)">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px">Sharpen preview — review before applying</div>
+      <div id="sharpen-preview-text" style="font-size:14.5px;white-space:pre-wrap;word-break:break-word;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="sharpen-apply" style="margin-top:0">Apply</button>
+        <button class="btn plain" id="sharpen-cancel" style="margin-top:0">Cancel</button>
+      </div>
+    </div>
+    <button class="btn plain" id="sharpen-undo" hidden style="margin-top:10px">Undo sharpen</button>
+  </div>
+</div>
+
+<!-- HANDOFF SHEET -->
+<div class="sheet-backdrop" id="sheet-handoff" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><div>Handoff</div><button class="btn plain" id="handoff-close">Close</button></div>
+    <label>Copy as</label>
+    <div class="seg" id="density-seg">
+      <button data-density="prompt" class="active">Prompt</button>
+      <button data-density="full">Full Brief</button>
+      <button data-density="markdown">Markdown</button>
+      <button data-density="json">JSON</button>
+    </div>
+    <button class="btn" id="handoff-copy">Copy</button>
+    <label>Open in AI</label>
+    <div class="hintline">Copy-first transport. Perplexity pre-fill is opt-in and length-limited.</div>
+    <div class="dest-grid" id="dest-grid"></div>
+    <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);margin:2px 0 12px;text-transform:none;letter-spacing:0;font-weight:400">
+      <input type="checkbox" id="prefill-toggle" style="width:18px;height:18px;accent-color:#d4243c">
+      Pre-fill prompt in Perplexity URL (opt-in)
+    </label>
+    <button class="btn ghost" id="handoff-share">Share link</button>
+    <div class="quiet-row">
+      <button class="linkbtn" id="act-export">Export .md</button>
+      <button class="linkbtn" id="act-pin">Pin as Starter</button>
+      <button class="linkbtn" id="act-dupe">Duplicate</button>
+      <button class="linkbtn danger" id="act-delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECENTS DRAWER -->
+<div class="sheet-backdrop" id="drawer-backdrop" hidden></div>
+<aside id="drawer" hidden aria-label="Briefs">
+  <div class="sheet-head"><div>Briefs</div><button class="btn plain" id="drawer-close">Close</button></div>
+  <button class="btn" id="drawer-new">+ New brief</button>
+  <div class="drawer-sec">Starters</div>
+  <div id="starter-list"></div>
+  <div class="drawer-sec">Recent</div>
+  <div id="recent-list"></div>
+  <div class="drawer-foot">G-CAFL-QC Framework™ © 2026 Christopher Turner.<br>All Rights Reserved.</div>
+</aside>
+
+<!-- STARTER FILL SHEET -->
+<div class="sheet-backdrop" id="sheet-starter" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><div>Fill starter values</div><button class="btn plain" id="starter-cancel">Cancel</button></div>
+    <div id="starter-fields"></div>
+    <button class="btn" id="starter-create">Create brief</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="engine-sharpen.js"></script>
+<script src="engine-handoff.js"></script>
+<script>
+'use strict';
+/* SharpenEngine and HandoffEngine load above (same files run under Node tests). */
+/* ================= utils ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toastEl = $('toast');
+let toastT = null;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>toastEl.classList.remove('show'), 1800); }
+function relTime(iso){
+  const s = Math.floor((Date.now() - new Date(iso).getTime())/1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+/* ================= dimensions ================= */
+const DIMS = [
+  { key:'goal',     letter:'G', name:'Goal',     hint:'What exactly are you producing?',        visualHint:'Asset and desired effect',      chips:['Success'] },
+  { key:'context',  letter:'C', name:'Context',  hint:'What evidence may be used? Name it.',     visualHint:'Subject, symbolism, grounding', chips:['Sources'] },
+  { key:'audience', letter:'A', name:'Audience', hint:'Who must understand, trust, or act?',     visualHint:'Viewer, platform, response',    chips:[] },
+  { key:'format',   letter:'F', name:'Format',   hint:'What exact output must be returned?',     visualHint:'Dimensions, composition, style',chips:['Return'] },
+  { key:'limits',   letter:'L', name:'Limits',   hint:'What must never happen?',                visualHint:'Exclusions, bad motifs',        chips:['Keep','Never'] },
+];
+const dimByKey = k => DIMS.find(d=>d.key===k);
+const dimByLetter = l => DIMS.find(d=>d.letter===l);
+
+/* ================= state ================= */
+const LS_KEY = 'gcaflqc.v3';
+function loadState(){
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.version===3) return s; } catch(e){}
+  return { version:3, activeBriefId:null, briefs:{}, recents:[] };
+}
+let S = loadState();
+let saveTimer = null;
+function persist(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{localStorage.setItem(LS_KEY, JSON.stringify(S));}catch(e){} }, 400); }
+function persistNow(){ clearTimeout(saveTimer); try{localStorage.setItem(LS_KEY, JSON.stringify(S));}catch(e){} }
+function newId(){ return 'brief_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function blankBrief(){ return { goal:'', context:'', audience:'', format:'', limits:'' }; }
+function activeRec(){ return S.briefs[S.activeBriefId] || null; }
+function touch(rec){
+  rec.updatedAt = new Date().toISOString();
+  S.recents = [rec.id].concat(S.recents.filter(id=>id!==rec.id)).slice(0,20);
+}
+function createRecord(goalText){
+  const rec = { id:newId(), createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(),
+    mode:'written', modePinned:false, brief:blankBrief(), sealedAt:null, pinned:false };
+  if (goalText) rec.brief.goal = goalText;
+  rec.mode = inferMode(rec.brief);
+  S.briefs[rec.id] = rec; S.activeBriefId = rec.id; touch(rec); persist();
+  return rec;
+}
+
+/* ================= domain: mode inference ================= */
+const VISUAL_KW = ['image','photo','illustration','picture','render','thumbnail','cover art','hero image','aspect ratio','poster','logo','infographic','artwork'];
+const WRITTEN_KW = ['article','report','essay','brief','post','thread','chapter','email','script','book','caption','memo'];
+function inferMode(brief){
+  const t = (brief.goal + ' ' + brief.format).toLowerCase();
+  let v=0, w=0;
+  VISUAL_KW.forEach(k=>{ if(t.includes(k)) v++; });
+  WRITTEN_KW.forEach(k=>{ if(t.includes(k)) w++; });
+  return (v>0 && v>=w) ? 'visual' : 'written';
+}
+
+/* ================= domain: QC audit ================= */
+const RULES = [
+  { id:'goal-empty',        dim:'G', severity:'blocking', test:b=>b.goal.trim()==='',
+    msg:'Goal — nothing to produce yet. Start with one sentence.' },
+  { id:'goal-no-success',   dim:'G', severity:'blocking', test:b=>!/^success:/mi.test(b.goal),
+    msg:'Goal — success condition is ambiguous. Add a `Success:` line.' },
+  { id:'context-no-boundary',dim:'C',severity:'blocking', test:b=>b.context.trim()==='' || !/^sources:/mi.test(b.context),
+    msg:'Context — no evidence boundary stated. Add a `Sources:` line.' },
+  { id:'audience-empty',    dim:'A', severity:'blocking', test:b=>b.audience.trim()==='',
+    msg:'Audience — no reader defined.' },
+  { id:'format-untestable', dim:'F', severity:'blocking', test:b=>b.format.trim()==='' || !/^return:/mi.test(b.format),
+    msg:'Format — output is not testable yet. Add a `Return:` line.' },
+  { id:'limits-unclear',    dim:'L', severity:'blocking', test:b=>b.limits.trim()==='' || !/^never:/mi.test(b.limits),
+    msg:'Limits — fabrication boundary is unclear. Add a `Never:` line.' },
+  { id:'limits-no-keep',    dim:'L', severity:'advisory', test:b=>b.limits.trim()!=='' && !/^keep:/mi.test(b.limits),
+    msg:'Limits — consider a `Keep:` line to preserve voice and terms.' },
+  { id:'brief-long',        dim:null,severity:'advisory', test:b=>Object.values(b).join(' ').length>2000,
+    msg:'Brief is getting long — tighten before sealing.' },
+  { id:'vague-language',    dim:null,severity:'advisory', test:b=>!!findVague(b),
+    dyn:b=>{ const f=findVague(b); return { dimension:dimByKey(f.dim).letter,
+      message:'Vague language in '+dimByKey(f.dim).name+' (“'+f.words.slice(0,3).join('”, “')+'”) — sharpen for precision.' }; } },
+];
+function auditBrief(brief){
+  const out = [];
+  for (const r of RULES){
+    if (r.test(brief)){
+      const dyn = r.dyn ? r.dyn(brief) : null;
+      out.push({ rule:r.id, dimension: dyn?dyn.dimension:r.dim, message: dyn?dyn.message:r.msg, severity:r.severity });
+    }
+  }
+  return out;
+}
+
+/* ================= domain: sharpening (engine) =================
+   Deterministic editorial engine lives in engine-sharpen.js (shared with the
+   Node regression suite). The human reviews every sharpen in the editor;
+   nothing auto-applies. */
+function findVague(brief){
+  for (const d of DIMS){
+    const f = SharpenEngine.audit(brief[d.key]||'', d.key);
+    if (f.length) return { dim:d.key, words:f.map(x=>x.term) };
+  }
+  return null;
+}
+
+/* ================= domain: renderers ================= */
+const segJoin = parts => parts.filter(p=>p && p[1] && String(p[1]).trim()).map(p=>`[${p[0]}] ${String(p[1]).trim()}`).join(' ');
+function renderPrompt(b){
+  return segJoin([['GOAL',b.goal],['CONTEXT',b.context],['AUDIENCE',b.audience],['FORMAT',b.format],['LIMITS',b.limits]])
+    + ' [QC] Before outputting, verify evidence support, flag uncertainty, and confirm full compliance.';
+}
+function renderFullBrief(b){
+  const sec = (t,v)=>`[${t}]\n${v.trim()}\n`;
+  return sec('GOAL',b.goal)+'\n'+sec('CONTEXT',b.context)+'\n'+sec('AUDIENCE',b.audience)+'\n'+sec('FORMAT',b.format)+'\n'
+    + '[LIMITS]\n- Do not fabricate facts, citations, quotations, dates, statistics, or case studies.\n- Separate direct evidence, interpretation, and unresolved uncertainty.\n'
+    + b.limits.trim().split('\n').map(l=>'- '+l.trim()).filter(l=>l!=='- ').join('\n')
+    + '\n\n[QUALITY CHECK]\n1. Confirm factual claims are supported by authorized evidence available in this task.\n2. Flag unsupported claims, conflicts, and unresolved uncertainty.\n3. Confirm Goal, Audience, Format, and Limits compliance.';
+}
+function renderVisual(b){
+  return 'VISUAL DIRECTIVE\n'
+    + 'Asset & effect: ' + b.goal.trim() + '\n'
+    + 'Subject, symbolism, grounding: ' + b.context.trim() + '\n'
+    + 'Viewer, platform, response: ' + b.audience.trim() + '\n'
+    + 'Dimensions, composition, visual direction: ' + b.format.trim() + '\n'
+    + 'Exclusions (negative prompt): ' + b.limits.trim() + '\n'
+    + 'The image must strengthen the author\'s message and never function as generic decoration.';
+}
+function renderMarkdown(b, rec){
+  const seal = rec && rec.sealedAt ? `\n\n*Sealed by author · ${new Date(rec.sealedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}*` : '\n\n*Draft — unsealed*';
+  return '# G-CAFL-QC Production Brief\n'
+    + '\n## Goal\n' + b.goal.trim()
+    + '\n\n## Context\n' + b.context.trim()
+    + '\n\n## Audience\n' + b.audience.trim()
+    + '\n\n## Format\n' + b.format.trim()
+    + '\n\n## Limits\n' + b.limits.trim()
+    + seal
+    + '\n\n---\nG-CAFL-QC Framework™ © 2026 Christopher Turner. All Rights Reserved.\n';
+}
+function renderJSON(b, rec){
+  return JSON.stringify({ goal:b.goal, context:b.context, audience:b.audience, format:b.format, limits:b.limits,
+    mode: rec?rec.mode:'written', sealedAt: rec?rec.sealedAt:null }, null, 2);
+}
+
+/* ================= domain: share codec ================= */
+function b64urlEncode(buf){
+  const bytes = new Uint8Array(buf); let s='';
+  for (let i=0;i<bytes.length;i+=0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000));
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while (str.length % 4) str += '=';
+  const bin = atob(str); const bytes = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes.buffer;
+}
+async function encodeShare(rec){
+  const payload = new TextEncoder().encode(JSON.stringify({ v:3, brief:rec.brief, mode:rec.mode }));
+  let buf = payload.buffer;
+  if (window.CompressionStream){
+    try{
+      const stream = new Blob([payload]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+      buf = await new Response(stream).arrayBuffer();
+    }catch(e){ /* fall through to raw */ }
+  }
+  return b64urlEncode(buf);
+}
+async function decodeShare(str){
+  try{
+    const buf = b64urlDecode(str);
+    let json;
+    try{
+      const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      json = await new Response(stream).text();
+    }catch(e){ json = new TextDecoder().decode(buf); }
+    const o = JSON.parse(json);
+    if (o && o.brief && typeof o.brief.goal==='string') return { brief:o.brief, mode:o.mode==='visual'?'visual':'written' };
+  }catch(e){}
+  return null;
+}
+
+/* ================= domain: handoff (engine) =================
+   Transport adapters live in engine-handoff.js (shared with Node tests).
+   Default transport is copy-first; Perplexity pre-fill is explicit opt-in
+   via the sheet toggle and is length-guarded. */
+function renderDensity(rec, density){
+  const b = rec.brief;
+  switch(density){
+    case 'full': return renderFullBrief(b);
+    case 'markdown': return renderMarkdown(b, rec);
+    case 'json': return renderJSON(b, rec);
+    case 'prompt': default: return rec.mode==='visual' ? renderVisual(b) : renderPrompt(b);
+  }
+}
+
+/* ================= UI: views ================= */
+function show(name){
+  $('view-blank').hidden = name!=='blank';
+  $('view-brief').hidden = name!=='brief';
+  $('app-header').hidden = name!=='brief';
+  if (name==='brief') renderBrief();
+}
+function openBrief(id){
+  if (!S.briefs[id]) return;
+  S.activeBriefId = id; persist();
+  show('brief');
+}
+
+/* ================= UI: brief document ================= */
+function previewText(t){
+  t = (t||'').trim();
+  if (!t) return null;
+  return t.length>120 ? t.slice(0,120).trim()+'…' : t;
+}
+function renderBrief(){
+  const rec = activeRec(); if(!rec){ show('blank'); return; }
+  const b = rec.brief;
+  // status chip
+  const chip = $('status-chip');
+  if (rec.sealedAt){ chip.textContent='Sealed'; chip.className='chip sealed'; }
+  else { chip.textContent='Draft'; chip.className='chip draft'; }
+  // mode pill
+  const pill = $('mode-pill');
+  pill.textContent = (rec.modePinned?'':'Auto · ') + (rec.mode==='visual'?'Visual':'Written');
+  pill.classList.toggle('manual', !!rec.modePinned);
+  // rows
+  const rows = $('brief-rows'); rows.innerHTML='';
+  DIMS.forEach(d=>{
+    const pv = previewText(b[d.key]);
+    const btn = document.createElement('button');
+    btn.className='dimrow'; btn.type='button';
+    btn.innerHTML = '<div class="badge">'+d.letter+'</div><div class="dimbody"><div class="dimname">'+d.name+'</div>'
+      + (pv ? '<div class="dimtext">'+esc(pv)+'</div>'
+            : '<div class="dimtext empty">'+esc(d.hint)+'</div>') + '</div>';
+    btn.addEventListener('click', ()=>openEditor(d.key));
+    rows.appendChild(btn);
+  });
+  // seal line
+  const sl = $('seal-line');
+  if (rec.sealedAt){
+    sl.hidden = false;
+    sl.textContent = 'Sealed by author · ' + new Date(rec.sealedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  } else sl.hidden = true;
+  // QC nudge
+  const issues = auditBrief(b);
+  const blocking = issues.find(i=>i.severity==='blocking');
+  const advisory = issues.find(i=>i.severity==='advisory');
+  const nudge = $('qc-nudge');
+  if (blocking){ nudge.classList.remove('ready'); nudge.textContent = blocking.message; }
+  else { nudge.classList.add('ready'); nudge.textContent = 'Ready to seal.'; }
+  const adv = $('qc-advisory');
+  if (advisory && !blocking){ adv.hidden=false; adv.textContent = advisory.message; }
+  else if (advisory){ adv.hidden=false; adv.textContent = advisory.message; }
+  else adv.hidden = true;
+  // primary action
+  const pa = $('primary-action');
+  if (rec.sealedAt){ pa.textContent='Handoff'; pa.onclick=()=>openSheet('sheet-handoff'); }
+  else if (blocking){ pa.textContent='Sharpen '+dimByLetter(blocking.dimension).name; pa.onclick=()=>openEditor(dimByLetter(blocking.dimension).key); }
+  else { pa.textContent='Seal Brief'; pa.onclick=sealBrief; }
+}
+function editDimension(rec, key, value){
+  rec.brief[key] = value;
+  if (rec.sealedAt){ rec.sealedAt=null; toast('Seal cleared — brief is now Draft.'); }
+  if (!rec.modePinned && (key==='goal'||key==='format')){
+    const m = inferMode(rec.brief);
+    if (m!==rec.mode) rec.mode = m;
+  }
+  touch(rec); persist();
+  renderBrief();
+}
+function sealBrief(){
+  const rec = activeRec(); if(!rec) return;
+  const blocking = auditBrief(rec.brief).find(i=>i.severity==='blocking');
+  if (blocking){ toast('Resolve the QC nudge first.'); return; }
+  rec.sealedAt = new Date().toISOString(); touch(rec); persistNow();
+  renderBrief(); toast('Brief sealed.');
+}
+
+/* ================= UI: row editor sheet ================= */
+let editingKey = null;
+function openSheet(id){ $(id).hidden=false; }
+function closeSheet(id){ $(id).hidden=true; }
+function openEditor(key){
+  const rec = activeRec(); if(!rec) return;
+  const d = dimByKey(key); editingKey = key;
+  $('editor-title').textContent = d.letter+' · '+d.name;
+  $('editor-text').value = rec.brief[key]||'';
+  const hint = rec.mode==='visual' ? d.visualHint : d.hint;
+  $('editor-text').placeholder = hint;
+  const chips = $('editor-chips'); chips.innerHTML='';
+  d.chips.forEach(c=>{
+    const btn=document.createElement('button'); btn.type='button'; btn.className='chipbtn'; btn.textContent='+ '+c;
+    btn.addEventListener('click',()=>{
+      const ta=$('editor-text'); const line='\n'+c+': ';
+      if (!new RegExp('^'+c+':','mi').test(ta.value)) ta.value = (ta.value.replace(/\s+$/,'') + line).replace(/^\n/,'');
+      ta.focus();
+      const rec2=activeRec(); if(rec2) editDimension(rec2, editingKey, ta.value);
+    });
+    chips.appendChild(btn);
+  });
+  openSheet('sheet-editor');
+  resetSharpenUI();
+  setTimeout(()=>$('editor-text').focus(), 60);
+}
+$('editor-text').addEventListener('input', ()=>{
+  const rec=activeRec(); if(rec&&editingKey) editDimension(rec, editingKey, $('editor-text').value);
+});
+$('editor-done').addEventListener('click', ()=>{ closeSheet('sheet-editor'); editingKey=null; });
+let sharpenUid = null, sharpenProposed = null;
+function resetSharpenUI(){
+  sharpenUid = null; sharpenProposed = null;
+  $('sharpen-preview').hidden = true; $('sharpen-undo').hidden = true;
+}
+$('editor-sharpen').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec||!editingKey) return;
+  const ta=$('editor-text');
+  const r=SharpenEngine.transform(ta.value, editingKey);
+  if (r.text===ta.value){ toast('Already tight.'); return; }
+  sharpenUid = rec.id+':'+editingKey; sharpenProposed = r.text;
+  $('sharpen-preview-text').textContent = r.text;
+  $('sharpen-preview').hidden=false; $('sharpen-undo').hidden=true;
+});
+$('sharpen-cancel').addEventListener('click', ()=>{ resetSharpenUI(); });
+$('sharpen-apply').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec||!editingKey||sharpenProposed===null) return;
+  const ta=$('editor-text');
+  const r=SharpenEngine.sharpen(sharpenUid, ta.value, editingKey);
+  ta.value=r.text; editDimension(rec, editingKey, r.text);
+  $('sharpen-preview').hidden=true; sharpenProposed=null;
+  $('sharpen-undo').hidden=false;
+  toast('Sharpened — review and edit freely.');
+});
+$('sharpen-undo').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec||!editingKey||!sharpenUid) return;
+  const prev=SharpenEngine.undo(sharpenUid);
+  if (prev===null){ toast('Nothing to undo.'); return; }
+  $('editor-text').value=prev; editDimension(rec, editingKey, prev);
+  $('sharpen-undo').hidden=true; toast('Undone.');
+});
+$('sheet-editor').addEventListener('click', e=>{ if(e.target===$('sheet-editor')){ closeSheet('sheet-editor'); editingKey=null; resetSharpenUI(); } });
+
+/* ================= UI: mode pill ================= */
+$('mode-pill').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec) return;
+  rec.mode = rec.mode==='written'?'visual':'written';
+  rec.modePinned = true; touch(rec); persist(); renderBrief();
+  toast('Mode: '+rec.mode+' (manual)');
+});
+
+/* ================= UI: handoff ================= */
+let density = 'prompt';
+$('density-seg').querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
+  $('density-seg').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); density=b.dataset.density;
+}));
+$('handoff-copy').addEventListener('click', async ()=>{
+  const rec=activeRec(); if(!rec) return;
+  await HandoffEngine.copyText(renderDensity(rec, density)); toast('Copied.');
+});
+(function buildDestGrid(){
+  const g=$('dest-grid');
+  HandoffEngine.DESTINATIONS.filter(d=>d.id!=='copy').forEach(d=>{
+    const b=document.createElement('button'); b.type='button'; b.className='btn plain';
+    b.textContent = d.label;
+    b.addEventListener('click',()=>{
+      const rec=activeRec(); if(!rec) return;
+      const pre = d.id==='perplexity' && $('prefill-toggle').checked;
+      HandoffEngine.handoff(d.id, renderDensity(rec, density), { prefill:pre }).then(r=>toast(r.message));
+    });
+    g.appendChild(b);
+  });
+})();
+$('handoff-share').addEventListener('click', async ()=>{
+  const rec=activeRec(); if(!rec) return;
+  const payload = await encodeShare(rec);
+  const url = location.origin + location.pathname + '#b=' + payload;
+  if (url.length>4000) toast('This link is long — some apps may truncate it.');
+  await HandoffEngine.copyText(url); toast('Share link copied.');
+});
+$('handoff-close').addEventListener('click', ()=>closeSheet('sheet-handoff'));
+$('sheet-handoff').addEventListener('click', e=>{ if(e.target===$('sheet-handoff')) closeSheet('sheet-handoff'); });
+$('act-export').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec) return;
+  const blob=new Blob([renderMarkdown(rec.brief, rec)],{type:'text/markdown'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='gcaflqc-brief-'+new Date().toISOString().slice(0,10)+'.md'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+});
+$('act-pin').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec) return;
+  rec.pinned=!rec.pinned; touch(rec); persistNow();
+  toast(rec.pinned?'Pinned as starter.':'Unpinned.');
+  closeSheet('sheet-handoff');
+});
+$('act-dupe').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec) return;
+  const c=JSON.parse(JSON.stringify(rec));
+  c.id=newId(); c.createdAt=new Date().toISOString(); c.sealedAt=null; c.pinned=false;
+  S.briefs[c.id]=c; touch(c); persistNow(); openBrief(c.id);
+  closeSheet('sheet-handoff'); toast('Duplicated.');
+});
+$('act-delete').addEventListener('click', ()=>{
+  const rec=activeRec(); if(!rec) return;
+  if(!confirm('Delete this brief?')) return;
+  delete S.briefs[rec.id];
+  S.recents=S.recents.filter(id=>id!==rec.id);
+  persistNow(); closeSheet('sheet-handoff');
+  const next=S.recents[0];
+  if(next&&S.briefs[next]) openBrief(next); else { S.activeBriefId=null; show('blank'); }
+});
+
+/* ================= UI: drawer ================= */
+function briefTitle(rec){
+  const g=(rec.brief.goal||'').trim().split('\n')[0];
+  return g ? (g.length>42?g.slice(0,42).trim()+'…':g) : 'Untitled brief';
+}
+function renderDrawer(){
+  const sl=$('starter-list'); sl.innerHTML='';
+  const starters=Object.values(S.briefs).filter(r=>r.pinned).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  if(!starters.length) sl.innerHTML='<div class="empty" style="padding:10px">Pin any brief as a starter.</div>';
+  starters.forEach(r=>{
+    const b=document.createElement('button'); b.type='button'; b.className='brow';
+    b.innerHTML='<div class="dot '+r.mode+'"></div><div class="t">'+esc(briefTitle(r))+'</div><div class="meta">starter</div>';
+    b.addEventListener('click',()=>startFromStarter(r.id));
+    sl.appendChild(b);
+  });
+  const rl=$('recent-list'); rl.innerHTML='';
+  const recents=S.recents.map(id=>S.briefs[id]).filter(Boolean);
+  if(!recents.length) rl.innerHTML='<div class="empty" style="padding:10px">No briefs yet.</div>';
+  recents.forEach(r=>{
+    const b=document.createElement('button'); b.type='button'; b.className='brow';
+    b.innerHTML='<div class="dot '+r.mode+'"></div><div class="t">'+esc(briefTitle(r))+'</div>'
+      +(r.sealedAt?'<div class="sealchip">SEALED</div>':'')+'<div class="meta">'+relTime(r.updatedAt)+'</div>';
+    b.addEventListener('click',()=>{ closeDrawer(); openBrief(r.id); });
+    rl.appendChild(b);
+  });
+}
+function openDrawer(){ renderDrawer(); $('drawer').hidden=false; $('drawer-backdrop').hidden=false; }
+function closeDrawer(){ $('drawer').hidden=true; $('drawer-backdrop').hidden=true; }
+$('drawer-btn').addEventListener('click', openDrawer);
+$('drawer-close').addEventListener('click', closeDrawer);
+$('drawer-backdrop').addEventListener('click', closeDrawer);
+$('drawer-new').addEventListener('click', ()=>{ closeDrawer(); S.activeBriefId=null; show('blank'); setTimeout(()=>$('blank-input').focus(),80); });
+
+/* ================= UI: starters ================= */
+let starterId=null, starterNames=[];
+function startFromStarter(id){
+  const r=S.briefs[id]; if(!r) return;
+  const set=new Set();
+  Object.values(r.brief).forEach(t=>{ const m=String(t).matchAll(/\[\[([^\]]+)\]\]/g); for(const x of m) set.add(x[1].trim()); });
+  starterId=id; starterNames=[...set];
+  closeDrawer();
+  if(!starterNames.length){ instantiateStarter({}); return; }
+  const f=$('starter-fields'); f.innerHTML='';
+  starterNames.forEach(n=>{
+    const lab=document.createElement('label'); lab.textContent=n;
+    const inp=document.createElement('input'); inp.type='text'; inp.id='ph_'+n; inp.placeholder='Value for '+n;
+    lab.appendChild(inp); f.appendChild(lab);
+  });
+  openSheet('sheet-starter');
+  setTimeout(()=>{ const first=document.querySelector('#starter-fields input'); if(first) first.focus(); },80);
+}
+function instantiateStarter(values){
+  const src=S.briefs[starterId]; if(!src) return;
+  const rec=createRecord('');
+  rec.mode=src.mode; rec.modePinned=true;
+  ['goal','context','audience','format','limits'].forEach(k=>{
+    rec.brief[k]=String(src.brief[k]||'').replace(/\[\[([^\]]+)\]\]/g,(m,n)=>values[n.trim()]!==undefined?values[n.trim()]:m);
+  });
+  touch(rec); persistNow(); closeSheet('sheet-starter');
+  openBrief(rec.id); toast('Brief created from starter.');
+}
+$('starter-cancel').addEventListener('click', ()=>closeSheet('sheet-starter'));
+$('starter-create').addEventListener('click', ()=>{
+  const values={};
+  starterNames.forEach(n=>{ const el=$('ph_'+n); values[n]=el?el.value.trim():''; });
+  instantiateStarter(values);
+});
+
+/* ================= UI: blank state ================= */
+function startFromBlank(){
+  const t=$('blank-input').value.trim();
+  if(!t){ toast('Describe what you are producing first.'); $('blank-input').focus(); return; }
+  const rec=createRecord(SharpenEngine.transform(t, 'goal').text);
+  $('blank-input').value='';
+  openBrief(rec.id);
+}
+$('blank-start').addEventListener('click', startFromBlank);
+
+/* ================= init ================= */
+(async function init(){
+  const m = location.hash.match(/#b=([A-Za-z0-9\-_]+)/);
+  if (m){
+    const decoded = await decodeShare(m[1]);
+    history.replaceState(null,'',location.pathname+location.search);
+    if (decoded){
+      const rec=createRecord('');
+      rec.brief.goal=decoded.brief.goal||''; rec.brief.context=decoded.brief.context||'';
+      rec.brief.audience=decoded.brief.audience||''; rec.brief.format=decoded.brief.format||'';
+      rec.brief.limits=decoded.brief.limits||''; rec.mode=decoded.mode;
+      touch(rec); persistNow(); openBrief(rec.id);
+      toast('Shared brief opened as Draft.');
+      return;
+    }
+    toast("This share link couldn't be opened.");
+  }
+  const first=S.recents.map(id=>S.briefs[id]).find(Boolean);
+  if (first) openBrief(first.id); else show('blank');
+})();
+</script>
+</body>
+</html>
