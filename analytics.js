@@ -61,10 +61,10 @@
       try {
         var queued = false;
         if (root.navigator && typeof root.navigator.sendBeacon === 'function') {
-          queued = root.navigator.sendBeacon(pingUrl, new Blob([payload], {type:'application/json'}));
+          queued = root.navigator.sendBeacon(pingUrl, new Blob([payload], {type:'text/plain;charset=UTF-8'}));
         }
         if (!queued && typeof root.fetch === 'function') {
-          root.fetch(pingUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body:payload, keepalive:true}).catch(function () {});
+          root.fetch(pingUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:payload, keepalive:true}).catch(function () {});
         }
       } catch (e) {} // Measurement must never interrupt sealing.
     }
