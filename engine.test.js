@@ -247,6 +247,10 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   ok(html.includes("addEventListener('pagehide', persistNow)") &&
     html.includes("visibilityState === 'hidden') persistNow()"),
     'LIN16 iOS exit flushes local brief storage');
+  ok(html.includes("if (rec.sealedAt){ nudge.classList.add('ready'); nudge.textContent = 'Brief sealed. Ready for handoff.'; }"),
+    'LIN17 sealed QC reflects final state');
+  ok(html.includes("else { nudge.classList.add('ready'); nudge.textContent = 'Ready to seal.'; }"),
+    'LIN18 draft QC still explains when sealing is possible');
 })();
 
 /* ---------------- QC: cap duplication, number consistency, money completeness ---------------- */
