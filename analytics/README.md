@@ -22,8 +22,10 @@ with a seal in the last 7 days, split new vs. returning).
 3. **Admin secret**: Worker → Settings → Variables → Add variable →
    name `ADMIN_KEY`, value = a long random string (keep it private).
 4. **Wire the app**: in `index.html`, set
-   `const ANALYTICS_URL = 'https://gcaflqc-analytics.<you>.workers.dev';`
-   (no trailing slash). Commit + push. The drawer toggle appears automatically.
+   `window.GCAFLQC_ANALYTICS_ENDPOINT = 'https://gcaflqc-analytics.<you>.workers.dev';`
+   (no trailing slash). The in-app `GCAFLQCMetrics` module (`analytics.js`)
+   beacons here on each opted-in seal. Commit + push. Until the URL is set,
+   only local on-device counts work.
 5. **Verify**: seal a brief with the toggle on, then open
    `https://gcaflqc-analytics.<you>.workers.dev/stats?key=YOUR_ADMIN_KEY`
    → `{ ok:true, active_7d, new_7d, returning_7d }`.
@@ -43,4 +45,5 @@ with a seal in the last 7 days, split new vs. returning).
   sealers; revisit if you ever outgrow it (good problem).
 - Cloudflare's own edge telemetry is outside this code's control; the Worker
   itself persists nothing but install ID + timestamps.
-- Until `ANALYTICS_URL` is set, the app toggle stays hidden and nothing pings.
+- Until `GCAFLQC_ANALYTICS_ENDPOINT` is set, the app toggle only drives
+  local on-device counts and nothing leaves the browser.

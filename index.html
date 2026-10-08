@@ -41,6 +41,12 @@ header.app{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe
 .biglabel{display:block;font-size:19px;font-weight:700;margin-bottom:12px}
 #blank-input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);color:var(--text);padding:16px;font-size:17px;font-family:inherit;min-height:110px;resize:vertical;margin-bottom:16px}
 #blank-input:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+.goal-compose{margin:5px 0 18px}
+.goal-compose label{display:block;font-size:18px;font-weight:750;margin:0 0 9px}
+.goal-compose .field-prefix{font-size:12px;letter-spacing:1.4px;color:var(--gold);font-weight:800;text-transform:uppercase;margin-bottom:6px}
+#inline-goal{width:100%;display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);color:var(--text);padding:14px 15px;font-size:16px;line-height:1.6;font-family:inherit;min-height:104px;max-height:35dvh;resize:vertical;overflow:auto;-webkit-overflow-scrolling:touch}
+#inline-goal:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+.goal-hint{margin-top:7px;color:var(--muted);font-size:12.5px}
 /* buttons */
 .btn{display:block;width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;margin-top:12px}
 .btn.plain{background:var(--surface2);border-color:var(--line);color:var(--text)}
@@ -65,14 +71,14 @@ header.app{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe
 .nudge.ready{border-left-color:var(--gold);color:var(--gold);font-weight:600}
 .advisory{margin-top:8px;font-size:12.5px;color:var(--muted);padding:0 4px}
 /* sheets */
-.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
-.sheet{width:100%;max-width:720px;max-height:92dvh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+.sheet-backdrop{position:fixed;inset:0;top:var(--vv-top,0px);bottom:auto;height:var(--vv-height,100dvh);background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:720px;max-height:calc(var(--vv-height,100dvh) - 6px);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .sheet-head>div:first-child{font-size:16px;font-weight:800}
 .sheet-head .btn{width:auto;margin:0;padding:9px 18px;font-size:14px}
 .headbtns{display:flex;gap:8px}
 .sheet label{display:block;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:16px 0 8px}
-#editor-text{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:14px;font-size:16px;font-family:inherit;min-height:180px;resize:vertical}
+#editor-text{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:14px;font-size:16px;line-height:1.55;font-family:inherit;min-height:124px;max-height:43dvh;resize:vertical;overflow:auto;-webkit-overflow-scrolling:touch}
 #editor-text:focus{outline:2px solid var(--accent);border-color:var(--accent)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .chipbtn{border:1px dashed var(--gold);background:transparent;color:var(--gold);border-radius:20px;padding:8px 16px;font-size:13.5px;font-weight:600;cursor:pointer}
@@ -113,25 +119,22 @@ footer.app .gold{color:var(--gold)}
 <body>
 <div class="wrap">
 
-  <header class="app" id="app-header" hidden>
+  <header class="app" id="app-header">
     <div class="brand">G-CAFL-<span class="qc">QC</span></div>
     <div class="hspacer"></div>
     <button class="pill" id="mode-pill" aria-label="Toggle brief mode"></button>
     <button class="iconbtn" id="drawer-btn" aria-label="Open briefs">☰</button>
   </header>
 
-  <!-- BLANK STATE -->
-  <section id="view-blank">
-    <div class="brand-big">Pomegranate × Lily · Freedom Arkives</div>
-    <h1>G-CAFL-<span class="qc">QC</span> Builder</h1>
-    <p class="principle">"AI is not the education — execution is."</p>
-    <label class="biglabel" for="blank-input">What are you producing?</label>
-    <textarea id="blank-input" placeholder="Type or paste your assignment in one sentence…"></textarea>
-    <button class="btn" id="blank-start">Start brief</button>
-  </section>
-
-  <!-- BRIEF VIEW -->
-  <section id="view-brief" hidden>
+  <!-- Live brief is the first screen. -->
+  <section id="view-brief">
+    <div class="goal-compose">
+      <label for="inline-goal">What are you producing?</label>
+      <div class="field-prefix">Goal · Success</div>
+      <textarea id="inline-goal" aria-label="Goal: what are you producing?" placeholder="Describe the outcome in your own words. Your answer becomes Success: in the brief."></textarea>
+      <div class="goal-hint">Type once; your goal saves automatically and follows the brief.</div>
+      <button class="linkbtn" id="goal-sharpen" type="button" style="padding:7px 0">Sharpen goal</button>
+    </div>
     <div><span class="chip draft" id="status-chip">Draft</span></div>
     <div id="brief-rows"></div>
     <div class="seal-line" id="seal-line" hidden></div>
@@ -203,14 +206,13 @@ footer.app .gold{color:var(--gold)}
   <div id="starter-list"></div>
   <div class="drawer-sec">Recent</div>
   <div id="recent-list"></div>
-  <div class="drawer-sec" id="analytics-sec" hidden>Analytics</div>
-  <div id="analytics-row" hidden>
-    <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);margin:2px 0 6px">
-      <input type="checkbox" id="analytics-toggle" style="width:18px;height:18px;accent-color:#d4243c">
-      Anonymous seal count (opt-in)
-    </label>
-    <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Sends only a random ID plus “a seal happened”. No brief content, no identity. Used to measure weekly active sealers.</div>
-  </div>
+  <div class="drawer-sec">Optional usage measurement</div>
+  <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--text)">
+    <input type="checkbox" id="metrics-optin" style="width:20px;height:20px;flex:none;accent-color:var(--accent);margin-top:2px">
+    Count my sealed briefs on this device
+  </label>
+  <div id="metrics-summary" style="font-size:12px;color:var(--gold);margin-top:9px"></div>
+  <p style="font-size:11px;color:var(--muted);margin-top:7px">Off by default. Saves seal times and duration, never brief text. Turning off clears local counts. Sitewide reporting requires an endpoint.</p>
   <div class="drawer-foot">G-CAFL-QC Framework™ © 2026 Christopher Turner.<br>All Rights Reserved.</div>
 </aside>
 
@@ -228,8 +230,14 @@ footer.app .gold{color:var(--gold)}
 <script src="engine-sharpen.js"></script>
 <script src="engine-handoff.js"></script>
 <script src="engine-quality.js"></script>
+<script src="analytics.js"></script>
 <script>
 'use strict';
+/* Sitewide seal analytics (opt-in). GCAFLQCMetrics (analytics.js) sends an
+   anonymous ping here on seal — random device ID only, no brief content.
+   Paste your deployed Cloudflare Worker URL to activate. Empty = disabled;
+   local on-device counts keep working either way. */
+window.GCAFLQC_ANALYTICS_ENDPOINT = '';
 /* SharpenEngine, HandoffEngine, and BriefQualityEngine load above. */
 /* ================= utils ================= */
 const $ = id => document.getElementById(id);
@@ -298,18 +306,17 @@ function inferMode(brief){
 const RULES = [
   { id:'goal-empty',        dim:'G', severity:'blocking', test:b=>b.goal.trim()==='',
     msg:'Goal — nothing to produce yet. Start with one sentence.' },
-  { id:'goal-no-success',   dim:'G', severity:'blocking', test:b=>!/^success:/mi.test(b.goal),
+  { id:'goal-no-success',   dim:'G', severity:'blocking', test:b=>!/^success:[^\S\r\n]*\S/mi.test(b.goal),
     msg:'Goal — success condition is ambiguous. Add a `Success:` line.' },
-  { id:'context-no-boundary',dim:'C',severity:'blocking', test:b=>b.context.trim()==='' || !/^sources:/mi.test(b.context),
+  { id:'context-no-boundary',dim:'C',severity:'blocking', test:b=>!/^sources:[^\S\r\n]*\S/mi.test(b.context),
     msg:'Context — no evidence boundary stated. Add a `Sources:` line.' },
   { id:'audience-empty',    dim:'A', severity:'blocking', test:b=>b.audience.trim()==='',
     msg:'Audience — no reader defined.' },
-  { id:'format-untestable', dim:'F', severity:'blocking', test:b=>b.format.trim()==='' || !/^return:/mi.test(b.format),
+  { id:'format-untestable', dim:'F', severity:'blocking', test:b=>!/^return:[^\S\r\n]*\S/mi.test(b.format),
     msg:'Format — output is not testable yet. Add a `Return:` line.' },
-  { id:'limits-unclear',    dim:'L', severity:'blocking', test:b=>b.limits.trim()==='' || !/^never:/mi.test(b.limits),
+  { id:'limits-unclear',    dim:'L', severity:'blocking', test:b=>!/^never:[^\S\r\n]*\S/mi.test(b.limits),
     msg:'Limits — fabrication boundary is unclear. Add a `Never:` line.' },
-  { id:'limits-no-keep',    dim:'L', severity:'advisory', test:b=>b.limits.trim()!=='' && !/^keep:/mi.test(b.limits),
-    msg:'Limits — consider a `Keep:` line to preserve voice and terms.' },
+  // Keep is optional; do not force duplicated instructions.
   { id:'brief-long',        dim:null,severity:'advisory', test:b=>Object.values(b).join(' ').length>2000,
     msg:'Brief is getting long — tighten before sealing.' },
   { id:'vague-language',    dim:null,severity:'advisory', test:b=>!!findVague(b),
@@ -428,11 +435,10 @@ function renderDensity(rec, density){
 }
 
 /* ================= UI: views ================= */
-function show(name){
-  $('view-blank').hidden = name!=='blank';
-  $('view-brief').hidden = name!=='brief';
-  $('app-header').hidden = name!=='brief';
-  if (name==='brief') renderBrief();
+function show(){
+  $('view-brief').hidden=false;
+  $('app-header').hidden=false;
+  renderBrief();
 }
 function openBrief(id){
   if (!S.briefs[id]) return;
@@ -447,8 +453,10 @@ function previewText(t){
   return t.length>120 ? t.slice(0,120).trim()+'…' : t;
 }
 function renderBrief(){
-  const rec = activeRec(); if(!rec){ show('blank'); return; }
+  const rec = activeRec(); if(!rec) return;
   const b = rec.brief;
+  const goalEl=$('inline-goal');
+  if(document.activeElement!==goalEl) goalEl.value=String(b.goal||'').replace(/^Success:\s*/i,'');
   // status chip
   const chip = $('status-chip');
   if (rec.sealedAt){ chip.textContent='Sealed'; chip.className='chip sealed'; }
@@ -459,8 +467,8 @@ function renderBrief(){
   pill.classList.toggle('manual', !!rec.modePinned);
   // rows
   const rows = $('brief-rows'); rows.innerHTML='';
-  DIMS.forEach(d=>{
-    const pv = previewText(b[d.key]);
+  DIMS.filter(d=>d.key!=='goal').forEach(d=>{
+    const pv=previewText(b[d.key]);
     const btn = document.createElement('button');
     btn.className='dimrow'; btn.type='button';
     if (d.key===freshKey) btn.classList.add('fresh');
@@ -490,9 +498,17 @@ function renderBrief(){
   // primary action
   const pa = $('primary-action');
   if (rec.sealedAt){ pa.textContent='Handoff'; pa.onclick=()=>openSheet('sheet-handoff'); }
-  else if (blocking){ pa.textContent='Sharpen '+dimByLetter(blocking.dimension).name; pa.onclick=()=>openEditor(dimByLetter(blocking.dimension).key); }
+  else if (blocking && blocking.dimension==='G'){ pa.textContent='Describe your goal'; pa.onclick=()=>$('inline-goal').focus(); }
+  else if (blocking){ pa.textContent='Complete '+dimByLetter(blocking.dimension).name; pa.onclick=()=>openEditor(dimByLetter(blocking.dimension).key); }
   else { pa.textContent='Seal Brief'; pa.onclick=sealBrief; }
 }
+let goalRenderTimer=null;
+$('inline-goal').addEventListener('input',()=>{
+  const rec=activeRec();if(!rec)return;
+  const typed=$('inline-goal').value;
+  editDimension(rec,'goal',typed.trim()?'Success: '+typed:'');
+});
+$('goal-sharpen').addEventListener('click',()=>openEditor('goal'));
 function editDimension(rec, key, value){
   rec.brief[key] = value;
   if (rec.sealedAt){ rec.sealedAt=null; toast('Seal cleared — brief is now Draft.'); }
@@ -501,15 +517,17 @@ function editDimension(rec, key, value){
     if (m!==rec.mode) rec.mode = m;
   }
   touch(rec); persist();
-  renderBrief();
+  if(key==='goal' && document.activeElement===$('inline-goal')){
+    clearTimeout(goalRenderTimer);goalRenderTimer=setTimeout(renderBrief,180);
+  }else renderBrief();
 }
 function sealBrief(){
   const rec = activeRec(); if(!rec) return;
   const blocking = auditBrief(rec.brief).find(i=>i.severity==='blocking');
   if (blocking){ toast('Resolve the QC nudge first.'); return; }
   rec.sealedAt = new Date().toISOString(); touch(rec); persistNow();
+  GCAFLQCMetrics.recordSeal(Date.now()-Date.parse(rec.createdAt));
   renderBrief(); toast('Brief sealed.');
-  pingSeal();
 }
 
 /* ================= UI: row editor sheet ================= */
@@ -525,18 +543,20 @@ function openEditor(key){
   // default, not something the user must discover via a chip tap. The seal
   // gates require these labels; typing them by hand also works. Never
   // overwrites existing text.
-  const DEFAULT_LABELS = { goal:'Success: ', context:'Sources: ', format:'Return: ', limits:'Keep: \nNever: ' };
+  const DEFAULT_LABELS = { goal:'Success: ', context:'Sources: ', format:'Return: ', limits:'Never: ' };
   $('editor-text').value = cur.trim() ? cur : (DEFAULT_LABELS[key]||'');
   const hint = rec.mode==='visual' ? d.visualHint : d.hint;
   $('editor-text').placeholder = hint;
   const chips = $('editor-chips'); chips.innerHTML='';
   d.chips.forEach(c=>{
+    if(new RegExp('^'+c+':','mi').test($('editor-text').value))return;
     const btn=document.createElement('button'); btn.type='button'; btn.className='chipbtn'; btn.textContent='+ '+c;
     btn.addEventListener('click',()=>{
       const ta=$('editor-text'); const line='\n'+c+': ';
       if (!new RegExp('^'+c+':','mi').test(ta.value)) ta.value = (ta.value.replace(/\s+$/,'') + line).replace(/^\n/,'');
       ta.focus();
       const rec2=activeRec(); if(rec2) editDimension(rec2, editingKey, ta.value);
+      btn.remove();
     });
     chips.appendChild(btn);
   });
@@ -663,7 +683,7 @@ $('act-delete').addEventListener('click', ()=>{
   S.recents=S.recents.filter(id=>id!==rec.id);
   persistNow(); closeSheet('sheet-handoff');
   const next=S.recents[0];
-  if(next&&S.briefs[next]) openBrief(next); else { S.activeBriefId=null; show('blank'); }
+  if(next&&S.briefs[next]) openBrief(next); else openBrief(createRecord('').id);
 });
 
 /* ================= UI: drawer ================= */
@@ -672,6 +692,9 @@ function briefTitle(rec){
   return g ? (g.length>42?g.slice(0,42).trim()+'…':g) : 'Untitled brief';
 }
 function renderDrawer(){
+  const m=GCAFLQCMetrics.snapshot();
+  $('metrics-optin').checked=m.enabled;
+  $('metrics-summary').textContent=m.enabled?'This device, 7 days: '+m.weekSeals+' seal'+(m.weekSeals===1?'':'s')+(m.returningDevice?' · returning':''):'Not tracking. Opt in above.';
   const sl=$('starter-list'); sl.innerHTML='';
   const starters=Object.values(S.briefs).filter(r=>r.pinned).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
   if(!starters.length) sl.innerHTML='<div class="empty" style="padding:10px">Pin any brief as a starter.</div>';
@@ -691,21 +714,18 @@ function renderDrawer(){
     b.addEventListener('click',()=>{ closeDrawer(); openBrief(r.id); });
     rl.appendChild(b);
   });
-  // Analytics opt-in row: only visible once a Worker URL is configured.
-  const aRow=$('analytics-row'), aSec=$('analytics-sec'), aTgl=$('analytics-toggle');
-  const configured = !!ANALYTICS_URL;
-  aRow.hidden = !configured; aSec.hidden = !configured;
-  if (configured && aTgl){
-    aTgl.checked = analyticsOptIn();
-    aTgl.onchange = ()=>setAnalyticsOptIn(aTgl.checked);
-  }
 }
 function openDrawer(){ renderDrawer(); $('drawer').hidden=false; $('drawer-backdrop').hidden=false; }
 function closeDrawer(){ $('drawer').hidden=true; $('drawer-backdrop').hidden=true; }
 $('drawer-btn').addEventListener('click', openDrawer);
 $('drawer-close').addEventListener('click', closeDrawer);
 $('drawer-backdrop').addEventListener('click', closeDrawer);
-$('drawer-new').addEventListener('click', ()=>{ closeDrawer(); S.activeBriefId=null; show('blank'); setTimeout(()=>$('blank-input').focus(),80); });
+$('drawer-new').addEventListener('click',()=>{closeDrawer();openBrief(createRecord('').id);setTimeout(()=>$('inline-goal').focus(),80);});
+$('metrics-optin').addEventListener('change',()=>{
+  const wants=$('metrics-optin').checked,enabled=GCAFLQCMetrics.setEnabled(wants);
+  renderDrawer();
+  toast(wants?(enabled?'Local seal counting enabled.':'Measurement unavailable.'):'Local counts cleared.');
+});
 
 /* ================= UI: starters ================= */
 let starterId=null, starterNames=[];
@@ -742,58 +762,18 @@ $('starter-create').addEventListener('click', ()=>{
   instantiateStarter(values);
 });
 
-/* ================= analytics: opt-in seal ping =================
-   Privacy contract: sends ONLY { install_id, event:'seal' } to ANALYTICS_URL.
-   No brief content, no identity, default off. Paste your deployed Worker URL
-   into ANALYTICS_URL to enable the toggle in the drawer. */
-const ANALYTICS_URL = '';
-const ANALYTICS_KEY = 'gcaflqc.analyticsOptIn';
-const INSTALL_KEY = 'gcaflqc.installId';
-function installId(){
-  let id = null;
-  try { id = localStorage.getItem(INSTALL_KEY); } catch(e){}
-  if (!/^[A-Za-z0-9_-]{16,64}$/.test(id||'')){
-    const bytes = new Uint8Array(24);
-    if (crypto.getRandomValues) crypto.getRandomValues(bytes);
-    else for (let i=0;i<bytes.length;i++) bytes[i]=Math.floor(Math.random()*256);
-    const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-    id = Array.from(bytes, b=>abc.charAt(b%64)).join('');
-    try { localStorage.setItem(INSTALL_KEY, id); } catch(e){}
-  }
-  return id;
+/* ================= UI: keyboard-safe sheets ================= */
+let freshKey=null;
+function fitVisibleViewport(){
+  if(!window.visualViewport)return;
+  document.documentElement.style.setProperty('--vv-height',Math.round(window.visualViewport.height)+'px');
+  document.documentElement.style.setProperty('--vv-top',Math.round(window.visualViewport.offsetTop)+'px');
 }
-function analyticsOptIn(){
-  try { return localStorage.getItem(ANALYTICS_KEY)==='1'; } catch(e){ return false; }
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',fitVisibleViewport);
+  window.visualViewport.addEventListener('scroll',fitVisibleViewport);
+  fitVisibleViewport();
 }
-function setAnalyticsOptIn(on){
-  try { localStorage.setItem(ANALYTICS_KEY, on?'1':''); } catch(e){}
-}
-function pingSeal(){
-  if (!ANALYTICS_URL || !analyticsOptIn()) return;
-  const url = ANALYTICS_URL.replace(/\/$/,'') + '/ping';
-  const payload = JSON.stringify({ install_id: installId(), event:'seal' });
-  try {
-    if (navigator.sendBeacon){
-      navigator.sendBeacon(url, new Blob([payload], {type:'application/json'}));
-      return;
-    }
-  } catch(e){}
-  try { fetch(url, { method:'POST', headers:{'content-type':'application/json'}, body:payload, keepalive:true }); } catch(e){}
-}
-
-/* ================= UI: blank state ================= */
-let freshKey = null;
-function startFromBlank(){
-  const t=$('blank-input').value.trim();
-  if(!t){ toast('Describe what you are producing first.'); $('blank-input').focus(); return; }
-  const rec=createRecord(SharpenEngine.transform(t, 'goal').text);
-  $('blank-input').value='';
-  freshKey='goal';
-  openBrief(rec.id);
-  toast('Your sentence is now the Goal — tap any row to refine.');
-  setTimeout(()=>{ freshKey=null; if (S.activeBriefId===rec.id) renderBrief(); }, 2600);
-}
-$('blank-start').addEventListener('click', startFromBlank);
 
 /* ================= init ================= */
 (async function init(){
@@ -813,7 +793,7 @@ $('blank-start').addEventListener('click', startFromBlank);
     toast("This share link couldn't be opened.");
   }
   const first=S.recents.map(id=>S.briefs[id]).find(Boolean);
-  if (first) openBrief(first.id); else show('blank');
+  if(first)openBrief(first.id);else openBrief(createRecord('').id);
 })();
 </script>
 </body>

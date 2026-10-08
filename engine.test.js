@@ -296,6 +296,64 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   eq(JSON.stringify(b), before, 'QSEV3 QC never modifies input');
 })();
 
+/* ---------------- analytics.js: opt-in local measurement ---------------- */
+(function () {
+  // Stub the browser surfaces the module reads off its root (globalThis in Node).
+  const store = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: {
+      getItem: k => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: k => store.delete(k),
+    }, configurable: true, writable: true,
+  });
+  const beacons = [];
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { sendBeacon: (url, blob) => { beacons.push({ url, blob }); return true; } },
+    configurable: true, writable: true,
+  });
+  const metrics = require('./analytics.js');
+  const reset = () => { store.clear(); beacons.length = 0; };
+
+  reset();
+  eq(metrics.isEnabled(), false, 'MET1 disabled by default');
+  eq(metrics.recordSeal(1000), false, 'MET2 no seal recorded without consent');
+  eq(metrics.setEnabled(false), false, 'MET3 opting out stays off');
+
+  reset();
+  eq(metrics.setEnabled(true), true, 'MET4 opt-in succeeds');
+  eq(metrics.isEnabled(), true, 'MET5 enabled after opt-in');
+  eq(metrics.recordSeal(5000), true, 'MET6 seal recorded after opt-in');
+  let snap = metrics.snapshot();
+  eq(snap.enabled, true, 'MET7 snapshot enabled');
+  eq(snap.weekSeals, 1, 'MET8 one seal this week');
+
+  eq(metrics.setEnabled(false), false, 'MET9 opt-out returns false');
+  eq(metrics.isEnabled(), false, 'MET10 disabled after opt-out');
+  eq(store.size, 0, 'MET11 opt-out clears stored data');
+
+  reset();
+  metrics.setEnabled(true);
+  metrics.recordSeal(2000);
+  eq(beacons.length, 0, 'MET12 no beacon without endpoint');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev';
+  metrics.recordSeal(3000);
+  eq(beacons.length, 1, 'MET13 beacon sent with endpoint');
+  eq(beacons[0].url, 'https://example.workers.dev', 'MET14 beacon targets endpoint');
+  eq(beacons[0].blob.type, 'application/json', 'MET15 beacon is JSON');
+  delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;
+
+  reset();
+  metrics.setEnabled(true);
+  const raw = JSON.parse(store.get('gcaflqc.analytics.v1'));
+  raw.events.push({ at: new Date(Date.now() - 10 * 86400000).toISOString(), durationSeconds: 5 });
+  store.set('gcaflqc.analytics.v1', JSON.stringify(raw));
+  metrics.recordSeal(1000);
+  snap = metrics.snapshot();
+  eq(snap.weekSeals, 1, 'MET16 only recent seal counts this week');
+  eq(snap.returningDevice, true, 'MET17 older seal marks returning device');
+})();
+
 /* ---------------- Report ---------------- */
 if (failures.length) {
   console.log('\nFAILURES (' + failures.length + '):\n');

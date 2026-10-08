@@ -1,13 +1,17 @@
 /* analytics/worker.js — G-CAFL-QC Builder seal analytics (Cloudflare Worker + KV).
  *
+ * Sitewide backend for the in-app GCAFLQCMetrics module (analytics.js), which
+ * collects opt-in, content-free seal counts on-device and beacons here when
+ * window.GCAFLQC_ANALYTICS_ENDPOINT is configured.
+ *
  * Privacy contract (this is the whole point):
- *  - Stores ONLY: a random install id + first/last seal timestamps.
+ *  - Stores ONLY: a random device id + first/last seal timestamps.
  *  - NEVER: brief content, IPs, user agents, or anything identifying.
  *  - Participation is OPT-IN, toggled in the app. Default: off.
  *
  * Endpoints:
- *  POST /ping   { install_id, event: "seal" } -> { ok:true } | { ok:true, deduped:true }
- *  GET  /stats?key=ADMIN_KEY                 -> { ok:true, active_7d, new_7d, returning_7d, at }
+ *  POST /ping   { v:1, event:"seal", deviceId, at, durationSeconds } -> { ok:true } | { ok:true, deduped:true }
+ *  GET  /stats?key=ADMIN_KEY -> { ok:true, active_7d, new_7d, returning_7d, at }
  *
  * Setup: create a KV namespace, bind it as SEALS, set ADMIN_KEY secret.
  * See analytics/README.md for the 10-minute deploy.
@@ -33,10 +37,12 @@ async function handlePing(req, env) {
   var body;
   try { body = await req.json(); }
   catch (e) { return json({ ok: false, error: 'bad json' }, 400); }
-  if (!validId(body.install_id)) return json({ ok: false, error: 'bad id' }, 400);
+  // Accept the GCAFLQCMetrics client shape { deviceId } and the generic { install_id }.
+  var id = body.deviceId || body.install_id;
+  if (!validId(id)) return json({ ok: false, error: 'bad id' }, 400);
   if (body.event !== 'seal') return json({ ok: false, error: 'bad event' }, 400);
 
-  var key = 'seal:' + body.install_id;
+  var key = 'seal:' + id;
   var now = Date.now();
   var existing = null;
   try { existing = await env.SEALS.get(key, 'json'); } catch (e) { /* treat as new */ }
