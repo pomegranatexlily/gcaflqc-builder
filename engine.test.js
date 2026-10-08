@@ -244,6 +244,9 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
     'LIN14 browser loads, audits and renders with quality module');
   ok(!/\(\?<[=!]/.test(fs.readFileSync(path.join(__dirname,'engine-quality.js'),'utf8')),
     'LIN15 module has no Safari-incompatible lookbehind');
+  ok(html.includes("addEventListener('pagehide', persistNow)") &&
+    html.includes("visibilityState === 'hidden') persistNow()"),
+    'LIN16 iOS exit flushes local brief storage');
 })();
 
 /* ---------------- QC: cap duplication, number consistency, money completeness ---------------- */
@@ -347,6 +350,15 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev/';
   metrics.recordSeal(3000);
   eq(beacons[2].url, 'https://example.workers.dev/ping', 'MET19 trailing slash resolves to /ping');
+  const oldFetch = globalThis.fetch;
+  const fetches = [];
+  globalThis.navigator.sendBeacon = () => false;
+  globalThis.fetch = (url, options) => { fetches.push({url, options}); return Promise.resolve({ok:true}); };
+  metrics.recordSeal(1000);
+  eq(fetches.length, 1, 'MET20 rejected beacon falls back to fetch');
+  eq(fetches[0].url, 'https://example.workers.dev/ping', 'MET21 fallback uses correct Worker route');
+  eq(fetches[0].options.method, 'POST', 'MET22 fallback sends POST');
+  globalThis.fetch = oldFetch;
   delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;
 
   reset();
