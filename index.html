@@ -494,7 +494,8 @@ function renderBrief(){
   const blocking = issues.find(i=>i.severity==='blocking');
   const advisory = issues.find(i=>i.severity==='advisory');
   const nudge = $('qc-nudge');
-  if (blocking){ nudge.classList.remove('ready'); nudge.textContent = blocking.message; }
+  if (rec.sealedAt){ nudge.classList.add('ready'); nudge.textContent = 'Brief sealed. Ready for handoff.'; }
+  else if (blocking){ nudge.classList.remove('ready'); nudge.textContent = blocking.message; }
   else { nudge.classList.add('ready'); nudge.textContent = 'Ready to seal.'; }
   const adv = $('qc-advisory');
   if (advisory && !blocking){ adv.hidden=false; adv.textContent = advisory.message; }
