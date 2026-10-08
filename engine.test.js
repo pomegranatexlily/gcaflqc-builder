@@ -339,8 +339,14 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev';
   metrics.recordSeal(3000);
   eq(beacons.length, 1, 'MET13 beacon sent with endpoint');
-  eq(beacons[0].url, 'https://example.workers.dev', 'MET14 beacon targets endpoint');
+  eq(beacons[0].url, 'https://example.workers.dev/ping', 'MET14 beacon routes to Worker /ping');
   eq(beacons[0].blob.type, 'application/json', 'MET15 beacon is JSON');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev/ping';
+  metrics.recordSeal(3000);
+  eq(beacons[1].url, 'https://example.workers.dev/ping', 'MET18 explicit /ping is not doubled');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev/';
+  metrics.recordSeal(3000);
+  eq(beacons[2].url, 'https://example.workers.dev/ping', 'MET19 trailing slash resolves to /ping');
   delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;
 
   reset();
