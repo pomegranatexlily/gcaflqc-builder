@@ -21,12 +21,22 @@ Dr. Nachamasha Yahsharala. All Rights Reserved.
 | `engine-quality.js` | Deterministic cross-field QC for missing thesis statements, vague source boundaries, redundant limitations, and readable compact prompt output. |
 | `engine-handoff.js` | Handoff transport adapters (Copy, ChatGPT, Claude, Perplexity, Grok). Copy-first; prefill is opt-in and length-guarded. |
 | `engine.test.js` | Executable Node regression suite. Run it with `node engine.test.js`. |
+| `analytics.js` | Opt-in, content-free seal-counting module. Local-only until a trusted HTTPS reporting endpoint is configured. |
 | `README.md` | This file. |
 
 Static hosting only — deploy the directory as-is to GitHub Pages. There is no
 backend, no account system, and no cloud sync. Briefs persist in the browser's
 `localStorage` under the versioned key `gcaflqc.v3` (autosave; historical
 `gcaflqc.briefs.v1` data is never destructively replaced).
+
+## First-layer growth release (October 2026)
+
+- **Immediate entry:** a new visitor starts directly in a live draft, with a Goal textarea ready to use. No duplicate Start Brief screen; the typed goal is saved once under the canonical `Success:` label.
+- **Editing:** the remaining Context, Audience, Format, and Limits fields retain their reviewable editor sheets. The Goal has an explicit **Sharpen goal** shortcut. Default line labels are supplied as needed; `Keep:` is optional so it does not repeat `Never:` budget limits.
+- **Mobile:** editor sheets respect `visualViewport` height and offset for on-screen keyboards, keep 16px text, and scroll within the available area. Physical iPhone testing is still required.
+- **Measurement:** use **Briefs → Optional usage measurement** to opt in. Seals and completion durations are counted per device, not full briefs. Turning it off deletes that browser's count data. Storage key: `gcaflqc.analytics.v1`.
+- **Sitewide reporting is not enabled:** GitHub Pages has no server. To enable opt-in aggregate seal reporting later, configure a trusted HTTPS receiver as `window.GCAFLQC_ANALYTICS_ENDPOINT` before `analytics.js` loads and publish clear privacy information. Until then, on-device counts cannot be combined or interpreted as unique users across devices. The receiver should minimize IP retention and other identifiers; never accept brief text.
+- **Existing data:** user-owned briefs continue in the unchanged `gcaflqc.v3` localStorage schema; AI handoff and sharing remain as before.
 
 ## The workflow
 
