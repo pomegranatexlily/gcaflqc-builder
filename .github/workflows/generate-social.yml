@@ -1,0 +1,30 @@
+name: Generate first-party social previews
+on:
+  push:
+    paths:
+      - "scripts/generate_social.py"
+      - ".github/workflows/generate-social.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install "Pillow>=10,<13"
+      - run: python scripts/generate_social.py
+      - name: Save generated site assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social-preview.png icon-192.png icon-512.png apple-touch-icon.png favicon-32.png 2>/dev/null || git add social-preview.png
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: generate branded social preview [skip ci]"
+            git push
+          fi
