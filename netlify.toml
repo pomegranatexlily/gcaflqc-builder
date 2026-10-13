@@ -1,0 +1,16 @@
+# Independent free-hosting preview configuration — not yet deployed.
+# New subdomains isolate localStorage from other GitHub Pages projects.
+# Keep previews non-indexed until redirect, OAuth and SEO checks pass.
+
+[build]
+  publish = "."
+  command = "echo 'No build step required'"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Robots-Tag = "noindex, nofollow"
+    Strict-Transport-Security = "max-age=31536000"
