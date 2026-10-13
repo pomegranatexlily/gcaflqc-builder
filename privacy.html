@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="index,follow">
+<title>Privacy &amp; Data — G-CAFL-QC Builder</title>
+<meta name="description" content="How the G-CAFL-QC Builder handles saved briefs and optional analytics.">
+<link rel="canonical" href="https://pomegranatexlily.github.io/gcaflqc-builder/privacy.html">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#100e0c;color:#f0e9dc;font:16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:780px;margin:auto;padding:35px 20px 75px}h1{font-size:clamp(30px,6vw,45px);line-height:1.2}h2{font-size:21px;color:#e8b04b;margin-top:30px}a{color:#f5c76a}p,li{color:#dfd6c9}.muted{color:#b8a998;font-size:13px}code{overflow-wrap:anywhere}
+</style></head><body><main>
+<a href="./">← Back to G-CAFL-QC Builder</a>
+<h1>Privacy &amp; browser data</h1>
+<p class="muted">Pomegranate × Lily · Updated October 13, 2026</p>
+<p>G-CAFL-QC Builder is a browser-based tool for drafting, reviewing, sharpening and sealing production briefs. This notice describes the current public website code, not a future subscription service.</p>
+<h2>Briefs stay in browser storage</h2>
+<p>Your drafts, sealed briefs, goals, context, audience descriptions, formats, limits and quality-check notes are stored in your device's browser local storage, including the current <code>gcaflqc.v3</code> record and any retained legacy <code>gcaflqc.briefs.v1</code> data. This site does not currently offer user accounts or automatically upload brief text to a Pomegranate × Lily application database.</p>
+<p>Use the app's export and copy features to keep a backup. Clearing browser data, switching browser profiles or changing website hostnames can remove access to locally stored work. Explicit copy, share, download or handoff actions may send or reveal content to applications or people you choose.</p>
+<h2>Optional seal analytics</h2>
+<p>Sitewide seal measurement is <strong>off by default</strong>. You can turn it on or off in the app's drawer. When enabled, the app creates a random device identifier and locally records sealed-brief event timestamps and elapsed times. The current code is configured to send limited, content-free event records to a Cloudflare Worker at <code>gcaflqc-analytics.editor-hw12.workers.dev</code>. It does <strong>not</strong> send the text of your briefs with those analytics events. Rejecting or turning measurement off does not prevent writing or sealing briefs; turning it off clears its local measurement record.</p>
+<p>When network reporting is enabled, the Cloudflare Worker and underlying network providers may process connection metadata such as your IP address. We cannot guarantee that infrastructure operators retain no technical logs. The random device identifier may distinguish repeat visits and should be treated as pseudonymous data, not anonymous personal information.</p>
+<h2>Hosting, cookies, and sharing</h2>
+<p>GitHub Pages hosts this website and may process standard connection data. The reviewed site code does not install ad pixels or unrelated marketing trackers. Essential browser storage is used for the app. Visitors control optional seal analytics using the app toggle; no other optional advertising or analytics service has been authorized by that toggle.</p>
+<p>Because other Pomegranate × Lily projects currently run under the same <code>pomegranatexlily.github.io</code> hostname, scripts on that hostname can technically access local storage regardless of URL path. Do not enter passwords, payment details or confidential third-party records in this prototype. Separate website origins are planned before account-based features.</p>
+<h2>Choices and contact</h2>
+<p>To remove local briefs, clear the app's saved records or your browser's site data after exporting anything important. To stop optional measurement, switch off its consent control in the Builder drawer. We currently have no account database from which to retrieve Builder briefs.</p>
+<p>For public, non-sensitive questions, see <a href="https://github.com/pomegranatexlily/gcaflqc-builder/issues">the GitHub issue tracker</a>. Issues are public: do not include private information. A verified confidential contact channel is still being set up for sensitive requests. This notice will be updated if that changes.</p>
+</main></body></html>
