@@ -1,0 +1,25 @@
+name: Public site uptime check
+on:
+  push:
+    paths:
+      - ".github/workflows/uptime.yml"
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Test public site response
+        env:
+          CHECK_URL: "https://pomegranatexlily.github.io/gcaflqc-builder/"
+        run: |
+          set -euo pipefail
+          echo "Checking $CHECK_URL"
+          curl --fail --location --silent --show-error \
+            --retry 2 --retry-delay 4 --connect-timeout 10 --max-time 30 \
+            --output /dev/null "$CHECK_URL"
+          echo "Site responded successfully"
