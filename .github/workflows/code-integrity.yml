@@ -54,3 +54,5 @@ jobs:
           console.log('Parsed '+jsonCount+' JSON/manifest files and '+htmlCount+' HTML files; checked '+scriptCount+' local scripts.');
           if (remoteCount) console.log(remoteCount+' URL/absolute-path script references require separate deployment and supply-chain review.');
           NODE
+      - name: Run builder engine behavioral regression suite
+        run: node engine.test.js
