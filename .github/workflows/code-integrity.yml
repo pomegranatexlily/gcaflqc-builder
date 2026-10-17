@@ -1,0 +1,56 @@
+name: First-party code integrity
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse all tracked JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+            count=$((count + 1))
+          done < <(git ls-files -z -- '*.js' '*.cjs' '*.mjs')
+          echo "Parsed $count JavaScript files."
+      - name: Check JSON syntax and first-party browser script paths
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const cp = require('node:child_process');
+          const tracked = cp.execFileSync('git',['ls-files','-z']).toString().split('\0').filter(Boolean);
+          let jsonCount = 0, htmlCount = 0, scriptCount = 0, remoteCount = 0;
+          for (const filename of tracked) {
+            if (/\.(?:json|webmanifest)$/.test(filename)) {
+              JSON.parse(fs.readFileSync(filename, 'utf8'));
+              jsonCount++;
+            }
+            if (!filename.endsWith('.html')) continue;
+            htmlCount++;
+            const html = fs.readFileSync(filename, 'utf8');
+            for (const match of html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)) {
+              const ref = match[1].split(/[?#]/)[0];
+              if (/^(?:[a-z][a-z\d+.-]*:|\/)/i.test(ref)) { remoteCount++; continue; }
+              const target = path.resolve(path.dirname(filename), decodeURIComponent(ref));
+              if (!fs.statSync(target, {throwIfNoEntry:false})?.isFile()) {
+                throw new Error('Broken local browser script in ' + filename + ': ' + match[1]);
+              }
+              scriptCount++;
+            }
+          }
+          console.log('Parsed '+jsonCount+' JSON/manifest files and '+htmlCount+' HTML files; checked '+scriptCount+' local scripts.');
+          if (remoteCount) console.log(remoteCount+' URL/absolute-path script references require separate deployment and supply-chain review.');
+          NODE
