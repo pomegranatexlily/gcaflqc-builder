@@ -303,77 +303,88 @@ ok(t('do this in order to win', 'goal').indexOf('to win') !== -1, 'L3 in order t
   eq(JSON.stringify(b), before, 'QSEV3 QC never modifies input');
 })();
 
-/* ---------------- analytics.js: opt-in local measurement ---------------- */
+/* ---------------- analytics.js: opt-in, private fetch delivery ---------------- */
 (function () {
-  // Stub the browser surfaces the module reads off its root (globalThis in Node).
   const store = new Map();
   Object.defineProperty(globalThis, 'localStorage', {
     value: {
-      getItem: k => (store.has(k) ? store.get(k) : null),
+      getItem: k => store.has(k) ? store.get(k) : null,
       setItem: (k, v) => store.set(k, String(v)),
       removeItem: k => store.delete(k),
-    }, configurable: true, writable: true,
+    }, configurable:true, writable:true
   });
-  const beacons = [];
-  Object.defineProperty(globalThis, 'navigator', {
-    value: { sendBeacon: (url, blob) => { beacons.push({ url, blob }); return true; } },
-    configurable: true, writable: true,
+  // Mimic a secure browser crypto API; production must fail closed without one.
+  const originalCrypto = globalThis.crypto;
+  Object.defineProperty(globalThis, 'crypto', {
+    value: {getRandomValues(array) {array.fill(42);return array;}},
+    configurable:true, writable:true
   });
+  const originalFetch = globalThis.fetch;
+  const deliveries = [];
+  globalThis.fetch = (url, options) => {
+    deliveries.push({url, options});
+    return Promise.resolve({ok:true,status:200,json:async()=>({ok:true})});
+  };
   const metrics = require('./analytics.js');
-  const reset = () => { store.clear(); beacons.length = 0; };
+  const reset = () => {store.clear();deliveries.length=0;delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;};
 
   reset();
-  eq(metrics.isEnabled(), false, 'MET1 disabled by default');
-  eq(metrics.recordSeal(1000), false, 'MET2 no seal recorded without consent');
-  eq(metrics.setEnabled(false), false, 'MET3 opting out stays off');
+  eq(metrics.isEnabled(),false,'MET1 disabled by default');
+  eq(metrics.recordSeal(1000),false,'MET2 cannot record without consent');
+  eq(metrics.setEnabled(false),false,'MET3 opt-out stays off');
+  eq(deliveries.length,0,'MET4 no network before opt-in');
 
   reset();
-  eq(metrics.setEnabled(true), true, 'MET4 opt-in succeeds');
-  eq(metrics.isEnabled(), true, 'MET5 enabled after opt-in');
-  eq(metrics.recordSeal(5000), true, 'MET6 seal recorded after opt-in');
-  let snap = metrics.snapshot();
-  eq(snap.enabled, true, 'MET7 snapshot enabled');
-  eq(snap.weekSeals, 1, 'MET8 one seal this week');
-
-  eq(metrics.setEnabled(false), false, 'MET9 opt-out returns false');
-  eq(metrics.isEnabled(), false, 'MET10 disabled after opt-out');
-  eq(store.size, 0, 'MET11 opt-out clears stored data');
+  eq(metrics.setEnabled(true),true,'MET5 opt-in succeeds with secure random ID');
+  eq(metrics.isEnabled(),true,'MET6 enabled after opt-in');
+  eq(metrics.recordSeal(5000),true,'MET7 seal recorded after opt-in');
+  let snap=metrics.snapshot();
+  eq(snap.weekSeals,1,'MET8 one seal counted');
+  eq(deliveries.length,0,'MET9 no remote request without configured endpoint');
+  eq(metrics.setEnabled(false),false,'MET10 opt-out returns false');
+  eq(metrics.isEnabled(),false,'MET11 disabled after opt-out');
+  eq(store.size,0,'MET12 opting out erases all locally stored analytics');
 
   reset();
   metrics.setEnabled(true);
   metrics.recordSeal(2000);
-  eq(beacons.length, 0, 'MET12 no beacon without endpoint');
-  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev';
+  eq(deliveries.length,0,'MET13 no default network endpoint');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT='https://example.workers.dev';
   metrics.recordSeal(3000);
-  eq(beacons.length, 1, 'MET13 beacon sent with endpoint');
-  eq(beacons[0].url, 'https://example.workers.dev/ping', 'MET14 beacon routes to Worker /ping');
-  eq(beacons[0].blob.type, 'application/json', 'MET15 beacon is JSON');
-  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev/ping';
+  eq(deliveries.length,1,'MET14 POST triggered only after opt-in and endpoint setup');
+  eq(deliveries[0].url,'https://example.workers.dev/ping','MET15 correct /ping route');
+  eq(deliveries[0].options.method,'POST','MET16 POST method');
+  eq(deliveries[0].options.credentials,'omit','MET17 never send browser credentials');
+  const payload=JSON.parse(deliveries[0].options.body);
+  eq(payload.event,'seal','MET18 only seal events collected');
+  eq(payload.durationSeconds,3,'MET19 elapsed time converted to seconds');
+  ok(Object.keys(payload).sort().join(',')==='at,deviceId,durationSeconds,event,v','MET20 only content-free telemetry keys');
+  ok(!/brief|goal|context|text|email|ip/i.test(JSON.stringify(payload)),'MET21 no prompt or identity content');
+  eq(deliveries[0].options.headers['Content-Type'],'text/plain;charset=UTF-8','MET22 preflight-safe content type');
+
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT='https://example.workers.dev/ping';
   metrics.recordSeal(3000);
-  eq(beacons[1].url, 'https://example.workers.dev/ping', 'MET18 explicit /ping is not doubled');
-  globalThis.GCAFLQC_ANALYTICS_ENDPOINT = 'https://example.workers.dev/';
+  eq(deliveries[1].url,'https://example.workers.dev/ping','MET23 do not double /ping');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT='https://example.workers.dev/';
   metrics.recordSeal(3000);
-  eq(beacons[2].url, 'https://example.workers.dev/ping', 'MET19 trailing slash resolves to /ping');
-  const oldFetch = globalThis.fetch;
-  const fetches = [];
-  globalThis.navigator.sendBeacon = () => false;
-  globalThis.fetch = (url, options) => { fetches.push({url, options}); return Promise.resolve({ok:true}); };
+  eq(deliveries[2].url,'https://example.workers.dev/ping','MET24 normalize trailing slash');
+  globalThis.GCAFLQC_ANALYTICS_ENDPOINT='http://untrusted.example';
   metrics.recordSeal(1000);
-  eq(fetches.length, 1, 'MET20 rejected beacon falls back to fetch');
-  eq(fetches[0].url, 'https://example.workers.dev/ping', 'MET21 fallback uses correct Worker route');
-  eq(fetches[0].options.method, 'POST', 'MET22 fallback sends POST');
-  globalThis.fetch = oldFetch;
-  delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;
+  eq(deliveries.length,3,'MET25 never send telemetry to insecure HTTP');
 
   reset();
   metrics.setEnabled(true);
-  const raw = JSON.parse(store.get('gcaflqc.analytics.v1'));
-  raw.events.push({ at: new Date(Date.now() - 10 * 86400000).toISOString(), durationSeconds: 5 });
-  store.set('gcaflqc.analytics.v1', JSON.stringify(raw));
+  const raw=JSON.parse(store.get('gcaflqc.analytics.v1'));
+  raw.events.push({at:new Date(Date.now()-10*86400000).toISOString(),durationSeconds:5});
+  store.set('gcaflqc.analytics.v1',JSON.stringify(raw));
   metrics.recordSeal(1000);
-  snap = metrics.snapshot();
-  eq(snap.weekSeals, 1, 'MET16 only recent seal counts this week');
-  eq(snap.returningDevice, true, 'MET17 older seal marks returning device');
+  snap=metrics.snapshot();
+  eq(snap.weekSeals,1,'MET26 only recent seals count this week');
+  eq(snap.returningDevice,true,'MET27 earlier seal marks returning device');
+
+  globalThis.fetch=originalFetch;
+  Object.defineProperty(globalThis,'crypto',{value:originalCrypto,configurable:true,writable:true});
+  delete globalThis.GCAFLQC_ANALYTICS_ENDPOINT;
 })();
 
 /* ---------------- Report ---------------- */
