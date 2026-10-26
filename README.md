@@ -95,12 +95,17 @@ including literal Unicode private-use characters in user input.
 
 ```sh
 node engine.test.js
+node analytics.test.js
 ```
 
-The suite covers every behavior above plus idempotence (second pass is a
+The engine suite covers every behavior above plus idempotence (second pass is a
 no-op with zero edits), no double-tagging, undo semantics, vague-language
 audit with idiom exceptions, determinism, edit-count sanity, and an iOS
 Safari 15+ compatibility scan (no regex lookbehind in the three engines).
+
+`analytics.test.js` checks consent defaults, zero pre-consent network/storage,
+the telemetry payload allow-list, HTTPS-only delivery, opt-out cleanup, local-only
+fallback behavior, secure device-ID requirements, and delivery status.
 
 ## Browser support
 
