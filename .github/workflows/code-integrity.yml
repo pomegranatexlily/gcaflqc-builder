@@ -56,3 +56,5 @@ jobs:
           NODE
       - name: Run builder engine behavioral regression suite
         run: node engine.test.js
+      - name: Run analytics consent and privacy regressions
+        run: node analytics.test.js
